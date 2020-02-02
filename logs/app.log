@@ -1,0 +1,4 @@
+2020-02-02 00:33:53,764 DEBUG com.logger.LoggerTest [main] Hello from Logback
+2020-02-02 00:33:53,769 DEBUG com.logger.LoggerTest [main] getNumber() : 5
+2020-02-02 00:33:53,770 ERROR com.logger.LoggerTest [main] getNumber() : 5
+2020-02-02 00:33:53,770 INFO com.logger.LoggerTest [main] getNumber2() : 5
