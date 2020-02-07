@@ -5,17 +5,20 @@ import org.slf4j.LoggerFactory;
 
 public class LoggerTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(LoggerTest.class);
+//    private static final Logger logger = LoggerFactory.getLogger(LoggerTest.class);
 
     public static void main(String[] args) {
 
-        logger.debug("Hello from Logback");
+        Logger logger = LoggerFactory.getLogger("jsonLogger");
+        logger.debug("Debug message");
 
-        logger.debug("getNumber() : {}", getNumber());
-
-        logger.error("getNumber() : {}", getNumber());
-
-        logger.info("getNumber2() : {}", getNumber());
+//        logger.debug("Hello from Logback");
+//
+//        logger.debug("getNumber() : {}", getNumber());
+//
+//        logger.error("getNumber() : {}", getNumber());
+//
+//        logger.info("getNumber2() : {}", getNumber());
 
 
 

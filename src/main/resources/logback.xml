@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <property name="HOME_LOG" value="logs/app.log"/>
+    <property name="HOME_LOG" value="logs/app.json"/>
 
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <layout class="ch.qos.logback.classic.PatternLayout">
+<!--    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">-->
+<!--        <layout class="ch.qos.logback.classic.PatternLayout">-->
 
-                <Pattern>%X{ThreadNumber} - %m%n</Pattern>
-<!--            <Pattern>-->
-<!--                %d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n-->
-<!--            </Pattern>-->
-        </layout>
-    </appender>
+<!--                <Pattern>%X{ThreadNumber} - %m%n</Pattern>-->
+<!--&lt;!&ndash;            <Pattern>&ndash;&gt;-->
+<!--&lt;!&ndash;                %d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n&ndash;&gt;-->
+<!--&lt;!&ndash;            </Pattern>&ndash;&gt;-->
+<!--        </layout>-->
+<!--    </appender>-->
 
 <!--    <appender name="FILE" class="ch.qos.logback.core.FileAppender">-->
 <!--        <file>${HOME_LOG}</file>-->
@@ -40,13 +40,34 @@
 <!--        </encoder>-->
 <!--    </appender>-->
 
-    <logger name="com.logger" level="debug" additivity="false">
-        <appender-ref ref="CONSOLE"/>
-<!--        <appender-ref ref="FILE-ROLLING"/>-->
+    <appender name="json" class="ch.qos.logback.core.FileAppender">
+        <file>${HOME_LOG}</file>
+        <append>true</append>
+        <immediateFlush>true</immediateFlush>
+<!--        <encoder>-->
+<!--            <pattern>%d %p %c{1.} [%t] %m%n</pattern>-->
+<!--        </encoder>-->
+        <layout class="ch.qos.logback.contrib.json.classic.JsonLayout">
+            <jsonFormatter
+                    class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
+                <prettyPrint>false</prettyPrint>
+            </jsonFormatter>
+            <appendLineSeparator>true</appendLineSeparator>
+            <timestampFormat>yyyy-MM-dd' 'HH:mm:ss.SSS</timestampFormat>
+        </layout>
+    </appender>
+
+    <logger name="jsonLogger" level="TRACE">
+        <appender-ref ref="json" />
     </logger>
 
+<!--    <logger name="com.logger" level="debug" additivity="false">-->
+<!--        <appender-ref ref="CONSOLE"/>-->
+<!--&lt;!&ndash;        <appender-ref ref="FILE-ROLLING"/>&ndash;&gt;-->
+<!--    </logger>-->
+
     <root level="error">
-        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="json"/>
     </root>
 
 </configuration>

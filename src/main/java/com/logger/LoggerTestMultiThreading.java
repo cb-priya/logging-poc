@@ -5,7 +5,10 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 class MultithreadingDemo extends Thread {
-    private static final Logger logger = LoggerFactory.getLogger(MultithreadingDemo.class);
+//    private static final Logger logger = LoggerFactory.getLogger(MultithreadingDemo.class);
+
+    private static final Logger logger = LoggerFactory.getLogger("jsonLogger");
+
 
     public void run() {
         try {
