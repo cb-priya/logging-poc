@@ -1,0 +1,66 @@
+version: '3'
+services:
+  localstack:
+    image: localstack/localstack
+    container_name: localstack
+    ports:
+      - "4567-4597:4567-4597"
+      - "8080-8082:8080-8082"
+    expose:
+      - 4567-4597
+      - 8080-8082
+    environment:
+      - SERVICES=${SERVICES- }
+      - DEBUG=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    networks:
+      - elk
+  kafka_local:
+    image: kafka_local
+    container_name: kafka_local
+    ports:
+      - "9092:9092"
+    expose:
+      - 9092
+    networks:
+      - elk
+  log-masker:
+    build: 
+        context: ./logging-poc/logstash
+        dockerfile: docker/Dockerfile-masker
+    container_name: log-masker
+    networks:
+      - elk
+    links:
+      - kafka_local
+      - localstack
+    depends_on:
+      - kafka_local
+#   log-elasticsearch:
+#     build: 
+#         context: ./logging-poc/logstash
+#         dockerfile: docker/Dockerfile-elasticsearch
+#     container_name: log-elasticsearch
+#     networks:
+#       - elk
+#     links:
+#       - kafka_local
+#       - localstack
+#     depends_on:
+#       - kafka_local
+  log-s3:
+    build: 
+        context: ./logging-poc/logstash
+        dockerfile: docker/Dockerfile-s3
+    container_name: log-s3
+    networks:
+      - elk
+    links:
+      - kafka_local
+      - localstack
+    depends_on:
+      - kafka_local
+
+networks:
+  elk:
+    driver: bridge   
