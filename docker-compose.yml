@@ -16,7 +16,8 @@ services:
     networks:
       - elk
   kafka_local:
-    image: kafka_local
+    build: 
+      context: ./logging-poc/kafka
     container_name: kafka_local
     ports:
       - "9092:9092"
