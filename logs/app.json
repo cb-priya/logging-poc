@@ -1,2 +1,0 @@
-{"timestamp":"2020-02-04 19:01:36.421","level":"INFO","thread":"Thread-0","mdc":{"ThreadNumber":"5"},"logger":"jsonLogger","message":"Thread 11 is running","context":"default"}
-{"timestamp":"2020-02-04 19:01:36.421","level":"INFO","thread":"Thread-6","mdc":{"ThreadNumber":"10"},"logger":"jsonLogger","message":"Thread 17 is running","context":"default"}

@@ -3,50 +3,14 @@
 
     <property name="HOME_LOG" value="logs/app.json"/>
 
-<!--    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">-->
-<!--        <layout class="ch.qos.logback.classic.PatternLayout">-->
-
-<!--                <Pattern>%X{ThreadNumber} - %m%n</Pattern>-->
-<!--&lt;!&ndash;            <Pattern>&ndash;&gt;-->
-<!--&lt;!&ndash;                %d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n&ndash;&gt;-->
-<!--&lt;!&ndash;            </Pattern>&ndash;&gt;-->
-<!--        </layout>-->
-<!--    </appender>-->
-
-<!--    <appender name="FILE" class="ch.qos.logback.core.FileAppender">-->
-<!--        <file>${HOME_LOG}</file>-->
-<!--        <append>true</append>-->
-<!--        <immediateFlush>true</immediateFlush>-->
-<!--        <encoder>-->
-<!--            <pattern>%d %p %c{1.} [%t] %m%n</pattern>-->
-<!--        </encoder>-->
-<!--    </appender>-->
-
-<!--    <appender name="FILE-ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
-<!--        <file>${HOME_LOG}</file>-->
-
-<!--        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">-->
-<!--            <fileNamePattern>logs/archived/app.%d{yyyy-MM-dd}.%i.log</fileNamePattern>-->
-<!--            &lt;!&ndash; each archived file, size max 10MB &ndash;&gt;-->
-<!--            <maxFileSize>1KB</maxFileSize>-->
-<!--            &lt;!&ndash; total size of all archive files, if total size > 20GB, it will delete old archived file &ndash;&gt;-->
-<!--            <totalSizeCap>20GB</totalSizeCap>-->
-<!--            &lt;!&ndash; 60 days to keep &ndash;&gt;-->
-<!--            <maxHistory>60</maxHistory>-->
-<!--        </rollingPolicy>-->
-
-<!--        <encoder>-->
-<!--            <pattern>%d %p %c{1.} [%t] %m%n</pattern>-->
-<!--        </encoder>-->
-<!--    </appender>-->
-
-    <appender name="json" class="ch.qos.logback.core.FileAppender">
+    <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${HOME_LOG}</file>
-        <append>true</append>
-        <immediateFlush>true</immediateFlush>
-<!--        <encoder>-->
-<!--            <pattern>%d %p %c{1.} [%t] %m%n</pattern>-->
-<!--        </encoder>-->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${HOME_LOG}.%d{yyyy-MM-dd-HH, UTC}.%i</fileNamePattern>
+            <maxFileSize>1MB</maxFileSize>
+            <maxHistory>1</maxHistory>
+            <totalSizeCap>6GB</totalSizeCap>
+        </rollingPolicy>
         <layout class="ch.qos.logback.contrib.json.classic.JsonLayout">
             <jsonFormatter
                     class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
@@ -57,17 +21,25 @@
         </layout>
     </appender>
 
-    <logger name="jsonLogger" level="TRACE">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.contrib.json.classic.JsonLayout">
+            <jsonFormatter
+                    class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
+                <prettyPrint>false</prettyPrint>
+            </jsonFormatter>
+            <appendLineSeparator>true</appendLineSeparator>
+            <timestampFormat>yyyy-MM-dd' 'HH:mm:ss.SSS</timestampFormat>
+        </layout>
+    </appender>
+
+    <!--<logger name="jsonLogger" level="DEBUG">
         <appender-ref ref="json" />
-    </logger>
+    </logger>-->
 
-<!--    <logger name="com.logger" level="debug" additivity="false">-->
-<!--        <appender-ref ref="CONSOLE"/>-->
-<!--&lt;!&ndash;        <appender-ref ref="FILE-ROLLING"/>&ndash;&gt;-->
-<!--    </logger>-->
 
-    <root level="error">
-        <appender-ref ref="json"/>
+    <root level="DEBUG">
+       <!-- <appender-ref ref="CONSOLE"/>-->
+        <appender-ref ref="ROLLING"/>
     </root>
 
 </configuration>
