@@ -21,13 +21,16 @@ public class LoggerTestMultiThreading {
                 Thread.currentThread().getId() +
                 " is running");
 
-        String time = args[0];
-
+        Integer runTimeinMins = 5;
+        if(args.length > 0) {
+            String time = args[0];
+            runTimeinMins = Integer.valueOf(time);
+        }
 
 
         //setLogLevel(Level.ERROR, "com.logger");
         for (int i = 0; i < 10; i++) {
-            MultithreadingDemo object = new MultithreadingDemo();
+            MultithreadingDemo object = new MultithreadingDemo(runTimeinMins);
             object.start();
         }
     }

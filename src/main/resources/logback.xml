@@ -7,11 +7,11 @@
         <file>${HOME_LOG}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>${HOME_LOG}.%d{yyyy-MM-dd-HH, UTC}.%i</fileNamePattern>
-            <maxFileSize>1MB</maxFileSize>
+            <maxFileSize>32 MB</maxFileSize>
             <maxHistory>1</maxHistory>
             <totalSizeCap>6GB</totalSizeCap>
         </rollingPolicy>
-        <layout class="ch.qos.logback.contrib.json.classic.JsonLayout">
+        <layout class="com.logger.ChargebeeJsonLayout">
             <jsonFormatter
                     class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
                 <prettyPrint>false</prettyPrint>
@@ -22,7 +22,7 @@
     </appender>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <layout class="ch.qos.logback.contrib.json.classic.JsonLayout">
+        <layout class="com.logger.ChargebeeJsonLayout">
             <jsonFormatter
                     class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
                 <prettyPrint>false</prettyPrint>
@@ -38,7 +38,7 @@
 
 
     <root level="DEBUG">
-       <!-- <appender-ref ref="CONSOLE"/>-->
+        <!--<appender-ref ref="CONSOLE"/>-->
         <appender-ref ref="ROLLING"/>
     </root>
 

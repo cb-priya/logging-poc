@@ -11,11 +11,19 @@ import java.util.UUID;
 
 class MultithreadingDemo extends Thread {
 
+    private Integer runTimeInMins;
+
+    public MultithreadingDemo(Integer runTimeInMins) {
+        this.runTimeInMins = runTimeInMins;
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(MultithreadingDemo.class);
 
     Map<String, String> context = MDC.getCopyOfContextMap();
 
     public void run() {
+
+        Long startTime = System.currentTimeMillis();
         try {
             Random random = new Random();
 
@@ -23,12 +31,17 @@ class MultithreadingDemo extends Thread {
             MDC.put("requestId", UUID.randomUUID().toString());
             MDC.put("domain", UUID.randomUUID().toString().substring(0,10));
 
-            for(int i = 0; i < 100000; i++) {
+            while(true) {
                 //TODO: Add Random string
                 logger.info("Thread " +
                         Thread.currentThread().getId() +
-                        ": " + RandomStringUtils.randomAlphabetic(Math.abs(random.nextInt()%100)));
-                Thread.sleep();
+                        ": " + RandomStringUtils.randomAlphabetic(Math.abs(random.nextInt() % 100)));
+
+                Long diff = System.currentTimeMillis() - startTime;
+
+                if (diff > (runTimeInMins * 60 * 1000)) {
+                    break;
+                }
             }
 
             logger.error("test error");
