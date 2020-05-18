@@ -1,0 +1,21 @@
+filebeat.inputs:
+ - paths:
+     - /tmp/logs/test_logs.json
+   document_type: myapp
+   json.keys_under_root: true
+   json.overwrite_keys: true
+   harvester_limit: 4
+   close_eof: true
+queue.mem:
+ events: 1024000
+ flush.min_events: 512000
+output.kafka:
+ hosts: ["kafka_cluster:9092"]
+ compression: snappy
+ partition.random:
+  reachable_only: false
+ topic: "filebeatToKafka"
+ worker: 4  
+ bulk_max_size: 512000
+ codec.json:
+  pretty: false
