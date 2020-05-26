@@ -1,66 +1,213 @@
 version: '3'
 services:
-  localstack:
-    image: localstack/localstack
-    container_name: localstack
-    ports:
-      - "4567-4597:4567-4597"
-      - "8080-8082:8080-8082"
-    expose:
-      - 4567-4597
-      - 8080-8082
-    environment:
-      - SERVICES=${SERVICES- }
-      - DEBUG=1
-      - DOCKER_HOST=unix:///var/run/docker.sock
-    networks:
-      - elk
-  kafka_local:
-    build: 
-      context: ./logging-poc/kafka
-    container_name: kafka_local
+  kafka_cluster:
+    image: kafka_cluster
+    container_name: kafka_cluster
     ports:
       - "9092:9092"
+      - "2181:2181"
     expose:
       - 9092
+      - 2181
     networks:
       - elk
+
+  filebeat:
+    image: ubuntu-18.04_filebeat
+    container_name: filebeat_docker
+    volumes:
+      # - /Users/cb-nitin/work/engg_elk/logs:/tmp/logs:ro
+      - /Users/cb-nitin/work/chargebee-app/tomcat/logs:/tmp/logs:ro
+      # - /Users/cb-nitin/Downloads/plan_predev17.log:/tmp/logs/plan_predev17.log:ro
+      # - /Users/cb-nitin/Downloads/predev4_pc.log:/tmp/logs/predev4_pc.log:ro
+      - /tmp/filebeat-conf:/etc/filebeat/filebeat.yml:rw
+      # - /tmp/filebeat_predev.yml:/etc/filebeat/filebeat.yml:rw
+    links:
+      - kafka_cluster
+    # external_links: 
+    #   - kafka_broker
+    networks:
+      - elk
+
   log-masker:
     build: 
-        context: ./logging-poc/logstash
+        context: ./logstash
         dockerfile: docker/Dockerfile-masker
     container_name: log-masker
     networks:
       - elk
     links:
-      - kafka_local
-      - localstack
+      - kafka_cluster
     depends_on:
-      - kafka_local
-#   log-elasticsearch:
-#     build: 
-#         context: ./logging-poc/logstash
-#         dockerfile: docker/Dockerfile-elasticsearch
-#     container_name: log-elasticsearch
-#     networks:
-#       - elk
-#     links:
-#       - kafka_local
-#       - localstack
-#     depends_on:
-#       - kafka_local
-  log-s3:
-    build: 
-        context: ./logging-poc/logstash
-        dockerfile: docker/Dockerfile-s3
-    container_name: log-s3
+      - kafka_cluster
+  # log-masker-2:
+  #   build: 
+  #       context: ./logstash
+  #       dockerfile: docker/Dockerfile-masker
+  #   container_name: log-masker_2
+  #   networks:
+  #     - elk
+  #   links:
+  #     - kafka_cluster
+  #   depends_on:
+  #     - kafka_cluster
+  # log-masker-3:
+  #   build: 
+  #       context: ./logstash
+  #       dockerfile: docker/Dockerfile-masker
+  #   container_name: log-masker_3
+  #   networks:
+  #     - elk
+  #   links:
+  #     - kafka_cluster
+  #   depends_on:
+  #     - kafka_cluster
+  # log-elasticsearch:
+  #   build: 
+  #       context: ./logstash
+  #       dockerfile: docker/Dockerfile-elasticsearch
+  #   container_name: log-elasticsearch
+  #   networks:
+  #     - elk
+  #   links:
+  #     - kafka_cluster
+  #   depends_on:
+  #     - kafka_cluster
+
+  # log-predev-elk:
+  #   build: 
+  #     context: /Users/cb-nitin/work/cb-infra-minions-utils/docker/logstash
+  #   container_name: logstash_predev
+  #   networks:
+  #     - elk
+    
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.2.1
+    container_name: es01
+    environment:
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es02
+      - cluster.initial_master_nodes=es01,es02
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data01:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+      - 9300:9300
     networks:
       - elk
+  es02:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.2.1
+    container_name: es02
+    environment:
+      - node.name=es02
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es01
+      - cluster.initial_master_nodes=es01,es02
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data02:/usr/share/elasticsearch/data
+    networks:
+      - elk
+  es03:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.2.1
+    container_name: es03
+    environment:
+      - node.name=es03
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es01,es02
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data03:/usr/share/elasticsearch/data
+    networks:
+      - elk
+  
+  # es04:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:7.2.1
+  #   container_name: es04
+  #   environment:
+  #     - node.name=es04
+  #     - cluster.name=es-docker-cluster
+  #     - discovery.seed_hosts=es01,es02,es03
+  #     - cluster.initial_master_nodes=es01,es02,es03,es04
+  #     - bootstrap.memory_lock=true
+  #     - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+  #   ulimits:
+  #     memlock:
+  #       soft: -1
+  #       hard: -1
+  #   volumes:
+  #     - data04:/usr/share/elasticsearch/data
+  #   networks:
+  #     - elk
+  elastichq:
+    image: elastichq/elasticsearch-hq
+    container_name: elastichq
+    ports:
+      - 5000:5000
     links:
-      - kafka_local
-      - localstack
-    depends_on:
-      - kafka_local
+      - es01
+      - es02
+      - es03
+      # - es04
+
+    networks:
+      - elk
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.2.1
+    container_name: kibana
+    ports:
+      - 5601:5601
+    depends_on: 
+      - es01
+    links: 
+      - es01
+    volumes:
+      # - /Users/cb-nitin/work/engg_elk/logs:/tmp/logs:ro
+      - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    networks:
+      - elk
+
+volumes:
+  data01:
+    driver: local
+  data02:
+    driver: local
+  data03:
+    driver: local
+  # data04:
+  #   driver: local
+  # data04:
+  #   driver: local
+  # log-s3:
+  #   build: 
+  #       context: ./logstash
+  #       dockerfile: docker/Dockerfile-s3
+  #   container_name: log-s3
+  #   networks:
+  #     - elk
+  #   links:
+  #     - kafka_cluster
+  #     - localstack
+  #   depends_on:
+  #     - kafka_cluster
 
 networks:
   elk:
