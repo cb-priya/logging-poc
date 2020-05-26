@@ -1,18 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
-    <Appenders>
-        <Console name="LogToConsole" target="SYSTEM_OUT">
-            <JsonLayout compact="false" eventEol="true" properties="true" stacktraceAsString="true" locationInfo="true">
-                <KeyValuePair key="microservice" value="testmicroservice"/>
-            </JsonLayout>
-        </Console>
-    </Appenders>
+    <Properties>
+        <Property name="log-path">logs</Property>
+    </Properties>
+    <appenders>
+        <RollingFile name="RollingFile" filePattern="${log-path}/app.json.%d{yyyy-MM-dd-HH}-%i">
+            <ChargebeeJsonLayout locationInfo="true"/>
+            <Policies>
+                <CronTriggeringPolicy schedule="0 */5 * ? * *"/>
+                <SizeBasedTriggeringPolicy size="20 MB"/>
+            </Policies>
+            <DirectWriteRolloverStrategy maxFiles="10">
+                <Delete basePath="${log-path}">
+                    <IfFileName glob="app.json.*"/>
+                    <IfLastModified age="4h"/>
+                </Delete>
+            </DirectWriteRolloverStrategy>
+        </RollingFile>
+    </appenders>
     <Loggers>
-        <Logger name="com.logger" level="debug" additivity="false">
-            <AppenderRef ref="LogToConsole"/>
-        </Logger>
-        <Root level="info">
-            <AppenderRef ref="LogToConsole"/>
+        <Root level="INFO">
+            <AppenderRef ref="RollingFile"/>
         </Root>
     </Loggers>
 </Configuration>
