@@ -1,0 +1,28 @@
+PUT _template/cb_log_template
+{
+  "index_patterns": [
+    "cb-logs*"
+  ],
+  "settings": {
+    "number_of_shards": 6, 
+    "number_of_replicas": 1,
+    "index.default_pipeline" : "timestamp"
+  },
+  "mappings": {
+    "dynamic": false,
+    "properties": {
+      "timestamp" : {"type": "date",
+        "format": "yyyy-MM-dd HH:mm:ss.SSS||yyyy-MM-dd||epoch_millis||date_optional_time"
+      },
+      "es_sync_timestamp" : {"type": "date"},
+      "masker_timestamp" : {"type": "date"},
+      "level": { "type": "keyword"},
+      "logger": {"type": "text"},
+      "thread": {"type": "text"},
+      "logMessage": {"type":"text"},
+      "domain": {"type":"text"},
+      "requestId": {"type":"text"},
+      "created_at" : {"type": "date"}
+    }
+  }
+}

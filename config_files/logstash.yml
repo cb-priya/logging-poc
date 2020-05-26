@@ -1,0 +1,2 @@
+pipeline.batch.size: 5000
+xpack.monitoring.enabled: false

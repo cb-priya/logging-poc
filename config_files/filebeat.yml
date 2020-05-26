@@ -1,0 +1,20 @@
+ilebeat.inputs:
+    - paths:
+        - /home/ubuntu/logs/app.json.*
+      document_type: myapp
+      harvester_limit: 4
+      close_eof: true
+   queue.mem:
+    events: 1024000
+    flush.min_events: 512000
+   output.kafka:
+    ssl.enabled: true
+    hosts: [broker1:port","broker2:port"]
+    compression: snappy
+    partition.random:
+     reachable_only: false
+    topic: "${TOPIC}"
+    worker: 4
+    bulk_max_size: 512000
+    codec.json:
+     pretty: false
