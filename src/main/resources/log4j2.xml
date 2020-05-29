@@ -8,7 +8,7 @@
             <ChargebeeJsonLayout locationInfo="true"/>
             <Policies>
                 <CronTriggeringPolicy schedule="0 */5 * ? * *"/>
-                <SizeBasedTriggeringPolicy size="20 MB"/>
+                <SizeBasedTriggeringPolicy size="40 MB"/>
             </Policies>
             <DirectWriteRolloverStrategy maxFiles="10">
                 <Delete basePath="${log-path}">

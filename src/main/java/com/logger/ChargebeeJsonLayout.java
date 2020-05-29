@@ -18,6 +18,8 @@ import java.nio.charset.Charset;
 @Plugin(name = "ChargebeeJsonLayout", category = Node.CATEGORY, elementType = Layout.ELEMENT_TYPE)
 public class ChargebeeJsonLayout extends AbstractStringLayout {
 
+    private static final String DEFAULT_EOL = "\r\n";
+
     private final boolean locationInfo;
 
     public ChargebeeJsonLayout(Configuration config, Charset aCharset, Serializer headerSerializer,
@@ -83,7 +85,7 @@ public class ChargebeeJsonLayout extends AbstractStringLayout {
             }
         }
 
-        return jsonObject.toString().concat("\r\n");
+        return jsonObject.toString().concat(DEFAULT_EOL);
     }
 
 }

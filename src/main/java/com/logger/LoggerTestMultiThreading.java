@@ -23,15 +23,21 @@ public class LoggerTestMultiThreading {
                 Thread.currentThread().getId() +
                 " is running");
 
-        Integer runTimeinMins = 5;
+        Integer runTimeinMins = 1;
         if(args.length > 0) {
             String time = args[0];
             runTimeinMins = Integer.valueOf(time);
         }
 
+        Boolean logException = false;
+        if(args.length > 1) {
+            String isLogException = args[1];
+            logException = Boolean.valueOf(isLogException);
+        }
+
         //setLogLevel(Level.ERROR, "com.logger");
         for (int i = 0; i < 10; i++) {
-            MultithreadingDemo object = new MultithreadingDemo(runTimeinMins);
+            MultithreadingDemo object = new MultithreadingDemo(runTimeinMins, logException);
             object.start();
         }
 

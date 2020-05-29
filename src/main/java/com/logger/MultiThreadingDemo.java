@@ -10,9 +10,11 @@ import java.util.UUID;
 class MultithreadingDemo extends Thread {
 
     private Integer runTimeInMins;
+    private Boolean logExceptions;
 
-    public MultithreadingDemo(Integer runTimeInMins) {
+    public MultithreadingDemo(Integer runTimeInMins, Boolean logExceptions) {
         this.runTimeInMins = runTimeInMins;
+        this.logExceptions = logExceptions;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(MultithreadingDemo.class);
@@ -26,7 +28,7 @@ class MultithreadingDemo extends Thread {
             Random random = new Random();
 
             MDC.setContextMap(context);
-            MDC.put("requestId", UUID.randomUUID().toString());
+            MDC.put("request_id", UUID.randomUUID().toString());
             MDC.put("domain", UUID.randomUUID().toString().substring(0,10));
 
             Marker marker = MarkerFactory.getMarker("TEST");
@@ -37,11 +39,15 @@ class MultithreadingDemo extends Thread {
                 //TODO: Add Random string
                 logger.info(marker, "Thread " +
                         Thread.currentThread().getId() +
-                        ": " + RandomStringUtils.randomAlphabetic(Math.abs(random.nextInt() % 100)));
+                        ": " + RandomStringUtils.randomAlphabetic(10 + Math.abs(random.nextInt() % 100)));
 
                 Long diff = System.currentTimeMillis() - startTime;
 
-                Thread.sleep(10);
+                //Thread.sleep(10);
+
+                if(this.logExceptions) {
+                    logException(0);
+                }
 
                 if (diff > (runTimeInMins * 60 * 1000)) {
                     break;
@@ -54,4 +60,14 @@ class MultithreadingDemo extends Thread {
             logger.error("exception", e);
         }
     }
+
+    private void logException(int i) {
+        if(i == 20) {
+            logger.error("this is an error", new NumberFormatException());
+            return;
+        }
+        logException(++i);
+    }
+
+
 }
