@@ -3,6 +3,8 @@ ilebeat.inputs:
         - /home/ubuntu/logs/app.json.*
       document_type: myapp
       harvester_limit: 4
+      json.keys_under_root: true
+      json.overwrite_keys: true
       close_eof: true
    queue.mem:
     events: 1024000
