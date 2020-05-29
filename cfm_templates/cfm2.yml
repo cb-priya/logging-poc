@@ -63,7 +63,8 @@ Resources:
           !Sub |
             #!/bin/bash
 
-            apt-get update -y    
+            apt-get update -y
+            apt-get install -y openjdk-8-jre
 
             cd /home/ubuntu
 
@@ -116,7 +117,7 @@ Resources:
 
               aws s3 sync s3://elk-poc-s3/logstash-configs /home/ubuntu/logstash-configs
 
-              mv  /home/ubuntu/logstash-configs/logstash.yml /etc/logstash/logstash.yml
+              mv  /home/ubuntu/logstash-configs/pipelines.yml /etc/logstash/pipelines.yml
 
               cp /home/ubuntu/logstash-configs/* /etc/logstash/conf.d/
               
