@@ -1,0 +1,10 @@
+- pipeline.id: masker-pipeline
+  path.config: "/etc/logstash/config/logstash-masker.conf"
+  pipeline.workers: 2
+  pipeline.batch.size: 5000
+  xpack.monitoring.enabled: false
+- pipeline.id: elasticsearch-pipeline
+  path.config: "/etc/logstash/config/logstash-elasticsearch.conf"
+  pipeline.workers: 2
+  pipeline.batch.size: 5000
+  xpack.monitoring.enabled: false

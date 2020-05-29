@@ -1,0 +1,152 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  ELKResourceCFMName:
+    Type: String
+    Description: ELK resource CFM stack name
+  KafkaBrokers:
+    Type: String
+    Description: Kafka brokers endpoints
+  KafkaZookeepers:
+    Type: String
+    Description: Kafka zookeeper endpoints
+  ESDomainName:
+    Type: String
+    Description: Elasticsearch Domain Name
+  LogstashConfigBucketName:
+    Type: String
+    Description: Name of Bucket that contains logstash bucket
+  UbuntuAMI :
+    Type: AWS::EC2::Image::Id
+    Description: Image for Kafka Client and Logstash machines
+  KafkaClientInstanceType:
+    Type: String
+    Description: Instance type for Kafka Client
+  LogstashInstanceType:
+    Type: String
+    Description: Instance type for Logstash instane
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: Can contain only ASCII characters.
+  Subnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnet Id
+
+Mappings: 
+  CommonServiceMeta: 
+    us-east-1: 
+      name: "us-e1"
+    us-east-2: 
+      name: "us-e2"
+Resources:
+  KafkaClientEC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref KafkaClientInstanceType
+      KeyName: !Ref KeyName
+      AvailabilityZone: !Select 
+        - 0
+        - !GetAZs 
+          Ref: 'AWS::Region'
+      SubnetId: !Select 
+        - 0
+        - !Ref Subnets
+      SecurityGroupIds:
+        - Fn::ImportValue:
+            !Sub "${ELKResourceCFMName}-KafkaClientSecurityGroupId"
+      ImageId: !Ref UbuntuAMI
+      Tags:
+        - Key: Name
+          Value: KafkaClientInstance
+      UserData: 
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash
+
+            apt-get update -y    
+
+            cd /home/ubuntu
+
+            mkdir kafka
+
+            cd kafka
+
+            wget https://archive.apache.org/dist/kafka/2.2.1/kafka_2.12-2.2.1.tgz
+
+            tar -xzf kafka_2.12-2.2.1.tgz
+
+            cd kafka_2.12-2.2.1
+
+            /home/ubuntu/kafka/kafka_2.12-2.2.1/bin/kafka-topics.sh --zookeeper ${KafkaZookeepers} --create --topic unmaskedTopic --partitions 6 --replication-factor 3
+            /home/ubuntu/kafka/kafka_2.12-2.2.1/bin/kafka-topics.sh --zookeeper ${KafkaZookeepers} --create --topic maskedTopic  --partitions 6 --replication-factor 3
+        
+  LogstashLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        InstanceType: !Ref LogstashInstanceType
+        KeyName: !Ref KeyName
+        ImageId: !Ref UbuntuAMI
+        IamInstanceProfile:
+          Arn:
+            Fn::ImportValue:
+              !Sub "${ELKResourceCFMName}-LogstashInstanceProfileArn"
+        SecurityGroupIds:
+          - Fn::ImportValue:
+              !Sub "${ELKResourceCFMName}-LogstashSecurityGroupId"
+        UserData: 
+          Fn::Base64:
+            !Sub |
+              #!/bin/bash
+
+              apt-get update -y
+
+              apt-get install -y openjdk-8-jre
+
+              cp /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/security/cacerts /home/ubuntu/kafka.client.truststore.jks
+
+              apt install -y awscli
+
+              wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
+              apt-get install -y apt-transport-https
+              echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | tee -a /etc/apt/sources.list.d/elastic-7.x.list
+              apt-get update -y && apt-get install -y logstash
+              /usr/share/logstash/bin/logstash-plugin install logstash-output-amazon_es
+              /usr/share/logstash/bin/logstash-plugin install logstash-codec-json
+
+              aws s3 sync s3://elk-poc-s3/logstash-configs /home/ubuntu/logstash-configs
+
+              mv  /home/ubuntu/logstash-configs/logstash.yml /etc/logstash/logstash.yml
+
+              cp /home/ubuntu/logstash-configs/* /etc/logstash/conf.d/
+              
+              echo "MASKER_INPUT_TOPIC=\"unmaskedTopic\"" >> /etc/default/logstash
+              echo "MASKER_OUTPUT_TOPIC=\"maskedTopic\"" >> /etc/default/logstash
+              echo "MASKER_CONSUMER_GROUP_ID=\"masker-consumer\"" >> /etc/default/logstash
+              echo "MASKER_CONSUMER_THREADS=2" >> /etc/default/logstash
+              echo "MASKER_INPUT_BROKERS=\""${KafkaBrokers}"\"" >> /etc/default/logstash
+              echo "MASKER_OUTPUT_BROKERS=\""${KafkaBrokers}"\"" >> /etc/default/logstash
+
+              echo "ES_SYNC_INPUT_TOPIC=\"maskedTopic\"" >> /etc/default/logstash
+              echo "ES_SYNC_CONSUMER_GROUP_ID=\"es-sync-consumer\"" >> /etc/default/logstash
+              echo "ES_SYNC_CONSUMER_THREADS=2" >> /etc/default/logstash
+              echo "ES_SYNC_INPUT_BROKERS=\""${KafkaBrokers}"\"" >> /etc/default/logstash
+              echo "ES_DOMAIN_NAME=\""${ESDomainName}"\"" >> /etc/default/logstash
+              echo "ES_INDEX=\"application-logs\"" >> /etc/default/logstash
+
+              systemctl restart logstash
+
+      LaunchTemplateName: LogstashLaunchTemplate
+
+  LogstashASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: LogstashASG
+      MinSize: "0"
+      MaxSize: "3"
+      DesiredCapacity: "1"
+      HealthCheckGracePeriod: 300
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LogstashLaunchTemplate
+        Version: !GetAtt LogstashLaunchTemplate.DefaultVersionNumber
+      VPCZoneIdentifier: !Ref Subnets

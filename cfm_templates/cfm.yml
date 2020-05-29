@@ -1,0 +1,230 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues:
+      - logging-poc
+      - predev
+    Description: Environment
+  Microservice:
+    Type: String
+    AllowedValues: 
+      - elk
+    Description: Microservice Name
+  VPC:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC Id
+  KafkaInstanceType:
+    Type: String
+    Description: Kafka machine type
+  LogstashConfigBucketName:
+    Type: String
+    Description: Name of Bucket that contains logstash bucket
+  ElasticsearchDomainArn:
+    Type: String
+    Description: Arn of Elasticsearch domain
+  Subnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnet Id
+  MicoserviceSubnetSg:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Subnet SG Id
+ 
+Mappings: 
+  CommonServiceMeta: 
+    us-east-1: 
+      name: "us-e1"
+    us-east-2: 
+      name: "us-e2"
+Resources:
+  LogstashRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName:
+        Fn::Sub: 
+          - cb-${Environment}-${RegionId}-${Microservice}-logstash-role
+          - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "ec2.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: /
+      Policies:
+        - PolicyName: 
+            Fn::Sub: 
+              - cb-${Environment}-${RegionId}-${Microservice}-logstash-policy
+              - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "s3:GetObject"
+                  - "s3:GetObjectVersion"
+                  - "s3:ListBucket"
+                  - "s3:PutObject"
+                  - "s3:GetBucketPolicy"
+                Resource:
+                  - Fn::Sub: arn:aws:s3:::${LogstashConfigBucketName}
+                  - Fn::Sub: arn:aws:s3:::${LogstashConfigBucketName}/*
+              - Effect: "Allow"
+                Action:
+                  - "es:HttpHead"
+                  - "es:HttpPut"
+                  - "es:HttpPost"
+                Resource: 
+                  - !Ref ElasticsearchDomainArn
+
+  LogstashInstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    InstanceProfileName:
+      Fn::Sub: 
+        - cb-${Environment}-${RegionId}-${Microservice}-logstash-instance-profile
+        - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+    Properties: 
+      Path: "/"
+      Roles:
+        - Fn::Sub: 
+          - cb-${Environment}-${RegionId}-${Microservice}-logstash-role
+          - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+                   
+  MSKSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName:
+        Fn::Sub: 
+          - cb-${Environment}-${RegionId}-${Microservice}-msk-sg
+          - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+      GroupDescription: Enable access for zookeeper and broker
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 9092
+          ToPort: 9092
+          SourceSecurityGroupId: !Ref MicoserviceSubnetSg 
+        - IpProtocol: tcp
+          FromPort: 9094
+          ToPort: 9094
+          SourceSecurityGroupId: !Ref MicoserviceSubnetSg 
+
+  ESSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable access for Elasticsearch
+      VpcId: !Ref VPC
+      
+  
+  LogstashSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      GroupName:
+        Fn::Sub: 
+          - cb-${Environment}-${RegionId}-${Microservice}-logstash-sg
+          - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+      VpcId: !Ref VPC
+            
+  KafkaClientInstanceSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+  
+  ElasticSearchSGIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      Description : 'Elasticsearch SecurityGroup Ingress Rule'
+      GroupId: 
+        Fn::GetAtt:  [ ESSecurityGroup , GroupId]
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      SourceSecurityGroupId: 
+        Fn::GetAtt:  [ LogstashSecurityGroup , GroupId]
+        
+  MSKSGZookeeperIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      Description : 'MSK SecurityGroup Zookeeper Ingress Rule'
+      GroupId:
+        Fn::GetAtt:  [ MSKSecurityGroup , GroupId]
+      IpProtocol: tcp
+      FromPort: 2181
+      ToPort: 2181
+      SourceSecurityGroupId: 
+        Fn::GetAtt:  [ KafkaClientInstanceSecurityGroup , GroupId]
+  
+  MSKSGBrokerIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      Description : 'MSK SecurityGroup Broker Ingress Rule'
+      GroupId: 
+        Fn::GetAtt:  [ MSKSecurityGroup , GroupId]
+      IpProtocol: tcp
+      FromPort: 9092
+      ToPort: 9092
+      SourceSecurityGroupId: 
+        Fn::GetAtt:  [ LogstashSecurityGroup , GroupId]
+
+  MSKSGBrokerTlsIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      Description : 'MSK SecurityGroup Broker Tls Ingress Rule'
+      GroupId:
+        Fn::GetAtt:  [ MSKSecurityGroup , GroupId]
+      IpProtocol: tcp
+      FromPort: 9094
+      ToPort: 9094
+      SourceSecurityGroupId: 
+        Fn::GetAtt:  [ LogstashSecurityGroup , GroupId]
+
+  MSKCluster:
+    Type: 'AWS::MSK::Cluster'
+    Properties:
+      BrokerNodeGroupInfo:
+        ClientSubnets: !Ref Subnets
+        InstanceType: !Ref KafkaInstanceType
+        SecurityGroups:
+          - Fn::GetAtt:  [ MSKSecurityGroup , GroupId]
+        StorageInfo:
+          EBSStorageInfo:
+            VolumeSize: 20
+      ClusterName: MSKClusterELK
+      EncryptionInfo:
+        EncryptionInTransit:
+          ClientBroker: TLS
+          InCluster: true
+      EnhancedMonitoring: PER_TOPIC_PER_BROKER
+      KafkaVersion: 2.2.1
+      NumberOfBrokerNodes: 3
+  
+Outputs:
+  LogstashInstanceProfileArn:
+    Description: Arn of IAM instance profile created for Logstash instance
+    Value:
+      Fn::GetAtt: ["LogstashInstanceProfile", "Arn"]
+    Export:
+      Name: !Sub "${AWS::StackName}-LogstashInstanceProfileArn"
+  KafkaClientSecurityGroupId:
+    Description: SecurityGroup ID of Kafka client instance
+    Value:
+      Fn::GetAtt: ["KafkaClientInstanceSecurityGroup", "GroupId"]
+    Export:
+      Name: !Sub "${AWS::StackName}-KafkaClientSecurityGroupId"
+  LogstashSecurityGroupId:
+    Description: SecurityGroup ID of Logstash instance
+    Value:
+      Fn::GetAtt: ["LogstashSecurityGroup", "GroupId"]
+    Export:
+      Name: !Sub "${AWS::StackName}-LogstashSecurityGroupId"
+      
