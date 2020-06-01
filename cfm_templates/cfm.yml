@@ -5,6 +5,9 @@ Parameters:
     AllowedValues:
       - logging-poc
       - predev
+      - dev
+      - staging
+      - prod
     Description: Environment
   Microservice:
     Type: String
@@ -29,7 +32,6 @@ Parameters:
   MicoserviceSubnetSg:
     Type: AWS::EC2::SecurityGroup::Id
     Description: Subnet SG Id
- 
 Mappings: 
   CommonServiceMeta: 
     us-east-1: 
@@ -82,11 +84,11 @@ Resources:
 
   LogstashInstanceProfile:
     Type: "AWS::IAM::InstanceProfile"
-    InstanceProfileName:
-      Fn::Sub: 
-        - cb-${Environment}-${RegionId}-${Microservice}-logstash-instance-profile
-        - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
     Properties: 
+      InstanceProfileName:
+        Fn::Sub: 
+          - cb-${Environment}-${RegionId}-${Microservice}-logstash-instance-profile
+          - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
       Path: "/"
       Roles:
         - Fn::Sub: 
@@ -98,15 +100,11 @@ Resources:
     Properties:
       GroupName:
         Fn::Sub: 
-          - cb-${Environment}-${RegionId}-${Microservice}-msk-sg
+          - cb-${Environment}-${RegionId}-${Microservice}-msk-fw
           - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
       GroupDescription: Enable access for zookeeper and broker
       VpcId: !Ref VPC
       SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 9092
-          ToPort: 9092
-          SourceSecurityGroupId: !Ref MicoserviceSubnetSg 
         - IpProtocol: tcp
           FromPort: 9094
           ToPort: 9094
@@ -122,10 +120,10 @@ Resources:
   LogstashSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupDescription: Enable SSH access via port 22
+      GroupDescription: Security Group to be attached to logstash instances
       GroupName:
         Fn::Sub: 
-          - cb-${Environment}-${RegionId}-${Microservice}-logstash-sg
+          - cb-${Environment}-${RegionId}-${Microservice}-logstash-fw
           - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
       VpcId: !Ref VPC
             
@@ -163,18 +161,6 @@ Resources:
       ToPort: 2181
       SourceSecurityGroupId: 
         Fn::GetAtt:  [ KafkaClientInstanceSecurityGroup , GroupId]
-  
-  MSKSGBrokerIngress:
-    Type: 'AWS::EC2::SecurityGroupIngress'
-    Properties:
-      Description : 'MSK SecurityGroup Broker Ingress Rule'
-      GroupId: 
-        Fn::GetAtt:  [ MSKSecurityGroup , GroupId]
-      IpProtocol: tcp
-      FromPort: 9092
-      ToPort: 9092
-      SourceSecurityGroupId: 
-        Fn::GetAtt:  [ LogstashSecurityGroup , GroupId]
 
   MSKSGBrokerTlsIngress:
     Type: 'AWS::EC2::SecurityGroupIngress'
@@ -199,7 +185,10 @@ Resources:
         StorageInfo:
           EBSStorageInfo:
             VolumeSize: 20
-      ClusterName: MSKClusterELK
+      ClusterName: 
+        Fn::Sub: 
+          - cb-${Environment}-${RegionId}-${Microservice}-msk-cluster
+          - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
       EncryptionInfo:
         EncryptionInTransit:
           ClientBroker: TLS
