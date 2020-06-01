@@ -160,7 +160,15 @@ Resources:
               echo "ES_SYNC_CONSUMER_THREADS=2" >> /etc/default/logstash
               echo "ES_SYNC_INPUT_BROKERS=\""${KafkaBrokers}"\"" >> /etc/default/logstash
               echo "ES_DOMAIN_NAME=\""${ESDomainName}"\"" >> /etc/default/logstash
-              echo "ES_INDEX=\"application-logs\"" >> /etc/default/logstash
+              echo "ES_REGION=\""${AWS::Region}"\"" >> /etc/default/logstash
+              echo "ES_INDEX=\"cb-application-logs\"" >> /etc/default/logstash
+
+              echo "S3_INPUT_TOPIC=\"maskedTopic\"" >> /etc/default/logstash
+              echo "S3_CONSUMER_GROUP_ID=\"s3-sync-consumer\"" >> /etc/default/logstash
+              echo "S3_CONSUMER_THREADS=2" >> /etc/default/logstash
+              echo "S3_REGION=\""${AWS::Region}"\"" >> /etc/default/logstash
+              echo "S3_INPUT_BROKERS=\""${KafkaBrokers}"\"" >> /etc/default/logstash
+              echo "S3_BUCKET_NAME=\""${ESDomainName}"\"" >> /etc/default/logstash
 
               systemctl restart logstash
 
@@ -264,7 +272,7 @@ MSKDataLogsDiskUsedBroker3:
 MSKIdleCPUAlarmsBroker1:
     Type: AWS::CloudWatch::Alarm
     Properties:
-        AlarmDescription: High Disk Usage for storing Data
+        AlarmDescription: Idle CPU for the broker
         AlarmName:
             Fn::Sub:
                 - cb-${Environment}-${RegionId}-${Microservice}-msk-cpu-idle-alarm-1
@@ -288,7 +296,7 @@ MSKIdleCPUAlarmsBroker1:
 MSKIdleCPUAlarmsBroker2:
     Type: AWS::CloudWatch::Alarm
     Properties:
-        AlarmDescription: High Disk Usage for storing Data
+        AlarmDescription: Idle CPU for the broker
         AlarmName:
             Fn::Sub:
                 - cb-${Environment}-${RegionId}-${Microservice}-msk-cpu-idle-alarm-2
@@ -312,7 +320,7 @@ MSKIdleCPUAlarmsBroker2:
 MSKIdleCPUAlarmsBroker3:
     Type: AWS::CloudWatch::Alarm
     Properties:
-        AlarmDescription: High Disk Usage for storing Data
+        AlarmDescription: Idle CPU for the broker
         AlarmName:
             Fn::Sub:
                 - cb-${Environment}-${RegionId}-${Microservice}-msk-cpu-idle-alarm-3
@@ -334,23 +342,23 @@ MSKIdleCPUAlarmsBroker3:
           - 2
           - !Ref MSKBrokerIDList
 
-MSKMemoryFreeAlarmsBroker1:
+MSKUnderReplicatedParitionAlarmsBroker1:
     Type: AWS::CloudWatch::Alarm
     Properties:
-        AlarmDescription: High Disk Usage for storing Data
+        AlarmDescription: Under Replicated Paritions for the broker
         AlarmName:
             Fn::Sub:
-                - cb-${Environment}-${RegionId}-${Microservice}-msk-free-memory-alarm-1
+                - cb-${Environment}-${RegionId}-${Microservice}-msk-under-replicated-parition-alarm-1
                 - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
         AlarmActions:
         - Ref: SnsTopicArn
-        MetricName: MemoryFree
+        MetricName: UnderReplicatedPartitions
         Namespace: AWS/Kafka
-        Statistic: Average
+        Statistic: Maximum
         Period: 300
         EvaluationPeriods: 3
-        Threshold: 2000000000
-        ComparisonOperator: LessThanOrEqualToThreshold
+        Threshold: 0
+        ComparisonOperator: GreaterThanThreshold
         Dimensions:
         - Name: "Cluster Name"
           Value: !Ref MSKClusterName
@@ -359,23 +367,23 @@ MSKMemoryFreeAlarmsBroker1:
           - 0
           - !Ref MSKBrokerIDList
 
-MSKMemoryFreeAlarmsBroker2:
+MSKUnderReplicatedParitionAlarmsBroker2:
     Type: AWS::CloudWatch::Alarm
     Properties:
-        AlarmDescription: High Disk Usage for storing Data
+        AlarmDescription: Under Replicated Paritions for the broker
         AlarmName:
             Fn::Sub:
-                - cb-${Environment}-${RegionId}-${Microservice}-msk-free-memory-alarm-2
+                - cb-${Environment}-${RegionId}-${Microservice}-msk-under-replicated-parition-alarm-2
                 - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
         AlarmActions:
         - Ref: SnsTopicArn
-        MetricName: MemoryFree
+        MetricName: UnderReplicatedPartitions
         Namespace: AWS/Kafka
-        Statistic: Average
+        Statistic: Maximum
         Period: 300
         EvaluationPeriods: 3
-        Threshold: 2000000000
-        ComparisonOperator: LessThanOrEqualToThreshold
+        Threshold: 0
+        ComparisonOperator: GreaterThanThreshold
         Dimensions:
         - Name: "Cluster Name"
           Value: !Ref MSKClusterName
@@ -384,23 +392,23 @@ MSKMemoryFreeAlarmsBroker2:
           - 1
           - !Ref MSKBrokerIDList
     
-  MSKMemoryFreeAlarmsBroker3:
+  MSKUnderReplicatedParitionAlarmsBroker3:
     Type: AWS::CloudWatch::Alarm
     Properties:
-        AlarmDescription: High Disk Usage for storing Data
+        AlarmDescription: Under Replicated Paritions for the broker
         AlarmName:
             Fn::Sub:
-                - cb-${Environment}-${RegionId}-${Microservice}-msk-free-memory-alarm-3
+                - cb-${Environment}-${RegionId}-${Microservice}-msk-under-replicated-parition-alarm-3
                 - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
         AlarmActions:
         - Ref: SnsTopicArn
-        MetricName: MemoryFree
+        MetricName: UnderReplicatedPartitions
         Namespace: AWS/Kafka
-        Statistic: Average
+        Statistic: Maximum
         Period: 300
         EvaluationPeriods: 3
-        Threshold: 2000000000
-        ComparisonOperator: LessThanOrEqualToThreshold
+        Threshold: 0
+        ComparisonOperator: GreaterThanThreshold
         Dimensions:
         - Name: "Cluster Name"
           Value: !Ref MSKClusterName

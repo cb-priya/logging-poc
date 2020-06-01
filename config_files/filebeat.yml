@@ -1,4 +1,4 @@
-ilebeat.inputs:
+filebeat.inputs:
     - paths:
         - /home/ubuntu/logs/app.json.*
       document_type: myapp
@@ -20,3 +20,5 @@ ilebeat.inputs:
     bulk_max_size: 512000
     codec.json:
      pretty: false
+
+max_procs: 2

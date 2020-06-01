@@ -1,7 +1,7 @@
 PUT _template/cb_log_template
 {
   "index_patterns": [
-    "cb-logs*"
+    "cb-application-logs*"
   ],
   "settings": {
     "number_of_shards": 1, 
