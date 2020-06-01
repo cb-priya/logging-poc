@@ -1,5 +1,19 @@
 AWSTemplateFormatVersion: 2010-09-09
 Parameters:
+  Environment:
+    Type: String
+    AllowedValues:
+      - logging-poc
+      - predev
+      - dev
+      - staging
+      - prod
+    Description: Environment
+    Microservice:
+      Type: String
+      AllowedValues: 
+        - elk
+      Description: Microservice Name
   ELKResourceCFMName:
     Type: String
     Description: ELK resource CFM stack name
@@ -31,6 +45,19 @@ Parameters:
   Subnets:
     Type: List<AWS::EC2::Subnet::Id>
     Description: Subnet Id
+  ESDomainName:
+    Type: String
+    Description: ES Domain name
+  MSKClusterName:
+    Type: String
+    Description: MSK Cluster Name
+  SnsTopicArn:
+      Type: String
+      Description: Arn of SNS topic to notify to
+  MSKBrokerIDList:
+      Type: CommaDelimitedList
+      Description: List all MSK Broker IDs
+  
 
 Mappings: 
   CommonServiceMeta: 
@@ -115,7 +142,7 @@ Resources:
               /usr/share/logstash/bin/logstash-plugin install logstash-output-amazon_es
               /usr/share/logstash/bin/logstash-plugin install logstash-codec-json
 
-              aws s3 sync s3://elk-poc-s3/logstash-configs /home/ubuntu/logstash-configs
+              aws s3 sync s3://${LogstashConfigBucketName}/logstash-configs /home/ubuntu/logstash-configs
 
               mv  /home/ubuntu/logstash-configs/pipelines.yml /etc/logstash/pipelines.yml
 
@@ -137,17 +164,321 @@ Resources:
 
               systemctl restart logstash
 
-      LaunchTemplateName: LogstashLaunchTemplate
+      LaunchTemplateName:
+        Fn::Sub: 
+          - cb-${Environment}-${RegionId}-${Microservice}-logstash-launch-template
+          - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
 
   LogstashASG:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      AutoScalingGroupName: LogstashASG
+      AutoScalingGroupName:
+        Fn::Sub: 
+          - cb-${Environment}-${RegionId}-${Microservice}-logstash-asg
+          - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
       MinSize: "0"
       MaxSize: "3"
-      DesiredCapacity: "1"
+      DesiredCapacity: "0"
       HealthCheckGracePeriod: 300
       LaunchTemplate:
         LaunchTemplateId: !Ref LogstashLaunchTemplate
         Version: !GetAtt LogstashLaunchTemplate.DefaultVersionNumber
       VPCZoneIdentifier: !Ref Subnets
+  
+  #Alarms
+
+  MSKDataLogsDiskUsedBroker1:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+        AlarmDescription: High Disk Usage for storing Data
+        AlarmName:
+            Fn::Sub:
+                - cb-${Environment}-${RegionId}-${Microservice}-msk-disk-used-alarm-1
+                - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+        AlarmActions:
+        - Ref: SnsTopicArn
+        MetricName: KafkaDataLogsDiskUsed
+        Namespace: AWS/Kafka
+        Statistic: Average
+        Period: 300
+        EvaluationPeriods: 3
+        Threshold: 70
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        Dimensions:
+        - Name: "Cluster Name"
+          Value: !Ref MSKClusterName
+        - Name: "Broker ID"
+          Value: !Select 
+          - 0
+          - !Ref MSKBrokerIDList
+MSKDataLogsDiskUsedBroker2:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+        AlarmDescription: High Disk Usage for storing Data
+        AlarmName:
+            Fn::Sub:
+                - cb-${Environment}-${RegionId}-${Microservice}-msk-disk-used-alarm-2
+                - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+        AlarmActions:
+        - Ref: SnsTopicArn
+        MetricName: KafkaDataLogsDiskUsed
+        Namespace: AWS/Kafka
+        Statistic: Average
+        Period: 300
+        EvaluationPeriods: 3
+        Threshold: 70
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        Dimensions:
+        - Name: "Cluster Name"
+          Value: !Ref MSKClusterName
+        - Name: "Broker ID"
+          Value: !Select 
+          - 1
+          - !Ref MSKBrokerIDList
+MSKDataLogsDiskUsedBroker3:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+        AlarmDescription: High Disk Usage for storing Data
+        AlarmName:
+            Fn::Sub:
+                - cb-${Environment}-${RegionId}-${Microservice}-msk-disk-used-alarm-3
+                - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+        AlarmActions:
+        - Ref: SnsTopicArn
+        MetricName: KafkaDataLogsDiskUsed
+        Namespace: AWS/Kafka
+        Statistic: Average
+        Period: 300
+        EvaluationPeriods: 3
+        Threshold: 70
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        Dimensions:
+        - Name: "Cluster Name"
+          Value: !Ref MSKClusterName
+        - Name: "Broker ID"
+          Value: !Select 
+          - 2
+          - !Ref MSKBrokerIDList
+
+#MSK CPU alarms
+MSKIdleCPUAlarmsBroker1:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+        AlarmDescription: High Disk Usage for storing Data
+        AlarmName:
+            Fn::Sub:
+                - cb-${Environment}-${RegionId}-${Microservice}-msk-cpu-idle-alarm-1
+                - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+        AlarmActions:
+        - Ref: SnsTopicArn
+        MetricName: CpuIdle
+        Namespace: AWS/Kafka
+        Statistic: Average
+        Period: 300
+        EvaluationPeriods: 3
+        Threshold: 30
+        ComparisonOperator: LessThanOrEqualToThreshold
+        Dimensions:
+        - Name: "Cluster Name"
+          Value: !Ref MSKClusterName
+        - Name: "Broker ID"
+          Value: !Select 
+          - 0
+          - !Ref MSKBrokerIDList
+MSKIdleCPUAlarmsBroker2:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+        AlarmDescription: High Disk Usage for storing Data
+        AlarmName:
+            Fn::Sub:
+                - cb-${Environment}-${RegionId}-${Microservice}-msk-cpu-idle-alarm-2
+                - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+        AlarmActions:
+        - Ref: SnsTopicArn
+        MetricName: CpuIdle
+        Namespace: AWS/Kafka
+        Statistic: Average
+        Period: 300
+        EvaluationPeriods: 3
+        Threshold: 30
+        ComparisonOperator: LessThanOrEqualToThreshold
+        Dimensions:
+        - Name: "Cluster Name"
+          Value: !Ref MSKClusterName
+        - Name: "Broker ID"
+          Value: !Select 
+          - 1
+          - !Ref MSKBrokerIDList
+MSKIdleCPUAlarmsBroker3:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+        AlarmDescription: High Disk Usage for storing Data
+        AlarmName:
+            Fn::Sub:
+                - cb-${Environment}-${RegionId}-${Microservice}-msk-cpu-idle-alarm-3
+                - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+        AlarmActions:
+        - Ref: SnsTopicArn
+        MetricName: CpuIdle
+        Namespace: AWS/Kafka
+        Statistic: Average
+        Period: 300
+        EvaluationPeriods: 3
+        Threshold: 30
+        ComparisonOperator: LessThanOrEqualToThreshold
+        Dimensions:
+        - Name: "Cluster Name"
+          Value: !Ref MSKClusterName
+        - Name: "Broker ID"
+          Value: !Select 
+          - 2
+          - !Ref MSKBrokerIDList
+
+
+
+#Elasticsearch Alarms
+        
+ESClusterRedStatusAlarm:
+ Type: AWS::CloudWatch::Alarm
+ #DeletionPolicy: Retain
+ Properties:
+   AlarmDescription: At least one primary shard and its replicas are not allocated to a node
+   AlarmName:
+     Fn::Sub:
+       - cb-${Environment}-${RegionId}-${Microservice}-es-cluster-red-status-alarm
+       - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+   AlarmActions:
+   - Ref: SnsTopicArn
+   MetricName: ClusterStatus.red
+   Namespace: AWS/ES
+   Statistic: Maximum
+   Period: 60
+   EvaluationPeriods: 1
+   Threshold: 1
+   ComparisonOperator: GreaterThanOrEqualToThreshold
+   Dimensions:
+     - Name: "DomainName"
+       Value: !Ref ESDomainName
+     - Name: "ClientId" 
+       Value: !Ref "AWS::AccountId"
+
+ESClusterYellowStatusAlarm:
+ Type: AWS::CloudWatch::Alarm
+ #DeletionPolicy: Retain
+ Properties:
+   AlarmDescription: At least one replica shard is not allocated to a node
+   AlarmName:
+     Fn::Sub:
+       - cb-${Environment}-${RegionId}-${Microservice}-es-cluster-yellow-status-alarm
+       - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+   AlarmActions:
+   - Ref: SnsTopicArn
+   MetricName: ClusterStatus.yellow
+   Namespace: AWS/ES
+   Statistic: Maximum
+   Period: 60
+   EvaluationPeriods: 1
+   Threshold: 1
+   ComparisonOperator: GreaterThanOrEqualToThreshold
+   Dimensions:
+     - Name: "DomainName"
+       Value: !Ref ESDomainName
+     - Name: "ClientId" 
+       Value: !Ref "AWS::AccountId"
+
+ESFreeStorageSpaceAlarm:
+  Type: AWS::CloudWatch::Alarm
+  #DeletionPolicy: Retain
+  Properties:
+      AlarmDescription: Alarm when freespace goes down to 40GiB or less
+      AlarmName:
+          Fn::Sub:
+              - cb-${Environment}-${RegionId}-${Microservice}-es-freestorage-alarm
+              - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+      AlarmActions:
+      - Ref: SnsTopicArn
+      MetricName: FreeStorageSpace
+      Namespace: AWS/ES
+      Statistic: Minimum
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 40960
+      ComparisonOperator: LessThanOrEqualToThreshold
+      Dimensions:
+      - Name: "DomainName"
+        Value: !Ref ESDomainName
+      - Name: "ClientId" 
+        Value: !Ref "AWS::AccountId"
+
+ESCPUUtilizationAlarm:
+  Type: AWS::CloudWatch::Alarm
+  #DeletionPolicy: Retain
+  Properties:
+      AlarmDescription: Continuous high CPU utilization
+      AlarmName:
+          Fn::Sub:
+              - cb-${Environment}-${RegionId}-${Microservice}-es-cpu-utilization-alarm
+              - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+      AlarmActions:
+      - Ref: SnsTopicArn
+      MetricName: CPUUtilization
+      Namespace: AWS/ES
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 3
+      Threshold: 80
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+      - Name: "DomainName"
+        Value: !Ref ESDomainName
+      - Name: "ClientId" 
+        Value: !Ref "AWS::AccountId"
+
+ESClusterBlockExceptionAlarm:
+  Type: AWS::CloudWatch::Alarm
+  #DeletionPolicy: Retain
+  Properties:
+      AlarmDescription: Continuous high CPU utilization
+      AlarmName:
+          Fn::Sub:
+              - cb-${Environment}-${RegionId}-${Microservice}-es-cluster-block-alarm
+              - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+      AlarmActions:
+      - Ref: SnsTopicArn
+      MetricName: ClusterIndexWritesBlocked
+      Namespace: AWS/ES
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+      - Name: "DomainName"
+        Value: !Ref ESDomainName
+      - Name: "ClientId" 
+        Value: !Ref "AWS::AccountId"
+
+ESJVMMemoryPressureAlarm:
+  Type: AWS::CloudWatch::Alarm
+  #DeletionPolicy: Retain
+  Properties:
+      AlarmDescription: High JVM Memory usage for extended period of time
+      AlarmName:
+          Fn::Sub:
+              - cb-${Environment}-${RegionId}-${Microservice}-es-jvm-memory-alarm
+              - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+      AlarmActions:
+      - Ref: SnsTopicArn
+      MetricName: JVMMemoryPressure
+      Namespace: AWS/ES
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 3
+      Threshold: 80
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+      - Name: "DomainName"
+        Value: !Ref ESDomainName
+      - Name: "ClientId" 
+        Value: !Ref "AWS::AccountId"
+
