@@ -6,7 +6,12 @@ PUT _template/cb_log_template
   "settings": {
     "number_of_shards": 1, 
     "number_of_replicas": 1,
-    "index.default_pipeline" : "timestamp"
+     "opendistro" : {
+      "index_state_management" : {
+        "policy_id" : "hot_warm_delete",
+        "rollover_alias" : "cb-application-logs"
+      }
+    }
   },
   "mappings": {
     "dynamic": false,
