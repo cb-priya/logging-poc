@@ -1,24 +1,24 @@
 filebeat.inputs:
-    - paths:
-        - /home/ubuntu/logs/app.json.*
-      document_type: myapp
-      harvester_limit: 4
-      json.keys_under_root: true
-      json.overwrite_keys: true
-      close_eof: true
-   queue.mem:
-    events: 1024000
-    flush.min_events: 512000
-   output.kafka:
-    ssl.enabled: true
-    hosts: [broker1:port","broker2:port"]
-    compression: snappy
-    partition.random:
-     reachable_only: false
-    topic: "${TOPIC}"
-    worker: 4
-    bulk_max_size: 512000
-    codec.json:
+  - paths:
+     - /home/ubuntu/logs/app.json.*
+    document_type: myapp
+    harvester_limit: 4
+    json.keys_under_root: true
+    json.overwrite_keys: true
+    close_eof: true
+queue.mem:
+  events: 1024000
+  flush.min_events: 512000
+output.kafka:
+  ssl.enabled: true
+  hosts: ["b-2.cb-logging-poc-us-e2-e.l2fn45.c3.kafka.us-east-2.amazonaws.com:9094","b-1.cb-logging-poc-us-e2-e.l2fn45.c3.kafka.us-east-2.amazonaws.com:9094","b-3.cb-logging-poc-us-e2-e.l2fn45.c3.kafka.us-east-2.amazonaws.com:9094"]
+  compression: snappy
+  partition.random:
+    reachable_only: false
+  topic: "${TOPIC}"
+  worker: 4
+  bulk_max_size: 512000
+  codec.json:
      pretty: false
 
 max_procs: 2
