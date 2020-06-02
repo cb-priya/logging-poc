@@ -169,7 +169,7 @@ Resources:
               echo "S3_CONSUMER_THREADS=2" >> /etc/default/logstash
               echo "S3_REGION=\""${AWS::Region}"\"" >> /etc/default/logstash
               echo "S3_INPUT_BROKERS=\""${KafkaBrokers}"\"" >> /etc/default/logstash
-              echo "S3_BUCKET_NAME=\""${ESDomainName}"\"" >> /etc/default/logstash
+              echo "S3_BUCKET_NAME=\""${LogstashConfigBucketName}"\"" >> /etc/default/logstash
 
               systemctl restart logstash
 

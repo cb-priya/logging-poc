@@ -79,9 +79,9 @@ Resources:
                   - Fn::Sub: arn:aws:s3:::${LogstashConfigBucketName}/*
               - Effect: "Allow"
                 Action:
-                  - "es:HttpHead"
-                  - "es:HttpPut"
-                  - "es:HttpPost"
+                  - "es:ESHttpHead"
+                  - "es:ESHttpPost"
+                  - "es:ESHttpPut"
                 Resource: 
                   - !Ref ElasticsearchDomainArn
 

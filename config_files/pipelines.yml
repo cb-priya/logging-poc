@@ -2,14 +2,11 @@
   path.config: "/etc/logstash/conf.d/logstash-masker.conf"
   pipeline.workers: 2
   pipeline.batch.size: 5000
-  xpack.monitoring.enabled: false
 - pipeline.id: elasticsearch-pipeline
   path.config: "/etc/logstash/conf.d/logstash-es-sync.conf"
   pipeline.workers: 2
   pipeline.batch.size: 5000
-  xpack.monitoring.enabled: false
 - pipeline.id: s3-pipeline
   path.config: "/etc/logstash/conf.d/logstash-s3.conf"
   pipeline.workers: 2
   pipeline.batch.size: 5000
-  xpack.monitoring.enabled: false
