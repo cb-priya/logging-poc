@@ -117,6 +117,10 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Enable access for Elasticsearch
+      GroupName:
+        Fn::Sub: 
+          - cb-${Environment}-${RegionId}-${Microservice}-es-fw
+          - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
       VpcId: !Ref VPC
       
   

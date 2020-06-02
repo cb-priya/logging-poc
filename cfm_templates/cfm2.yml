@@ -9,11 +9,11 @@ Parameters:
       - staging
       - prod
     Description: Environment
-    Microservice:
-      Type: String
-      AllowedValues: 
-        - elk
-      Description: Microservice Name
+  Microservice:
+    Type: String
+    AllowedValues: 
+      - elk
+    Description: Microservice Name
   ELKResourceCFMName:
     Type: String
     Description: ELK resource CFM stack name
@@ -42,6 +42,9 @@ Parameters:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
     ConstraintDescription: Can contain only ASCII characters.
+  KafkaClientSubnet:
+    Type: AWS::EC2::Subnet::Id
+    Description: Subnet Id
   Subnets:
     Type: List<AWS::EC2::Subnet::Id>
     Description: Subnet Id
@@ -75,9 +78,7 @@ Resources:
         - 0
         - !GetAZs 
           Ref: 'AWS::Region'
-      SubnetId: !Select 
-        - 0
-        - !Ref Subnets
+      SubnetId: !Ref KafkaClientSubnet
       SecurityGroupIds:
         - Fn::ImportValue:
             !Sub "${ELKResourceCFMName}-KafkaClientSecurityGroupId"
@@ -219,7 +220,7 @@ Resources:
           Value: !Select 
           - 0
           - !Ref MSKBrokerIDList
-MSKDataLogsDiskUsedBroker2:
+  MSKDataLogsDiskUsedBroker2:
     Type: AWS::CloudWatch::Alarm
     Properties:
         AlarmDescription: High Disk Usage for storing Data
@@ -243,7 +244,7 @@ MSKDataLogsDiskUsedBroker2:
           Value: !Select 
           - 1
           - !Ref MSKBrokerIDList
-MSKDataLogsDiskUsedBroker3:
+  MSKDataLogsDiskUsedBroker3:
     Type: AWS::CloudWatch::Alarm
     Properties:
         AlarmDescription: High Disk Usage for storing Data
@@ -269,7 +270,7 @@ MSKDataLogsDiskUsedBroker3:
           - !Ref MSKBrokerIDList
 
 #MSK CPU alarms
-MSKIdleCPUAlarmsBroker1:
+  MSKIdleCPUAlarmsBroker1:
     Type: AWS::CloudWatch::Alarm
     Properties:
         AlarmDescription: Idle CPU for the broker
@@ -293,7 +294,7 @@ MSKIdleCPUAlarmsBroker1:
           Value: !Select 
           - 0
           - !Ref MSKBrokerIDList
-MSKIdleCPUAlarmsBroker2:
+  MSKIdleCPUAlarmsBroker2:
     Type: AWS::CloudWatch::Alarm
     Properties:
         AlarmDescription: Idle CPU for the broker
@@ -317,7 +318,7 @@ MSKIdleCPUAlarmsBroker2:
           Value: !Select 
           - 1
           - !Ref MSKBrokerIDList
-MSKIdleCPUAlarmsBroker3:
+  MSKIdleCPUAlarmsBroker3:
     Type: AWS::CloudWatch::Alarm
     Properties:
         AlarmDescription: Idle CPU for the broker
@@ -342,7 +343,7 @@ MSKIdleCPUAlarmsBroker3:
           - 2
           - !Ref MSKBrokerIDList
 
-MSKUnderReplicatedParitionAlarmsBroker1:
+  MSKUnderReplicatedParitionAlarmsBroker1:
     Type: AWS::CloudWatch::Alarm
     Properties:
         AlarmDescription: Under Replicated Paritions for the broker
@@ -367,7 +368,7 @@ MSKUnderReplicatedParitionAlarmsBroker1:
           - 0
           - !Ref MSKBrokerIDList
 
-MSKUnderReplicatedParitionAlarmsBroker2:
+  MSKUnderReplicatedParitionAlarmsBroker2:
     Type: AWS::CloudWatch::Alarm
     Properties:
         AlarmDescription: Under Replicated Paritions for the broker
@@ -420,149 +421,149 @@ MSKUnderReplicatedParitionAlarmsBroker2:
 
 
 
-#Elasticsearch Alarms
+  #Elasticsearch Alarms
         
-ESClusterRedStatusAlarm:
- Type: AWS::CloudWatch::Alarm
- #DeletionPolicy: Retain
- Properties:
-   AlarmDescription: At least one primary shard and its replicas are not allocated to a node
-   AlarmName:
-     Fn::Sub:
-       - cb-${Environment}-${RegionId}-${Microservice}-es-cluster-red-status-alarm
-       - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
-   AlarmActions:
-   - Ref: SnsTopicArn
-   MetricName: ClusterStatus.red
-   Namespace: AWS/ES
-   Statistic: Maximum
-   Period: 60
-   EvaluationPeriods: 1
-   Threshold: 1
-   ComparisonOperator: GreaterThanOrEqualToThreshold
-   Dimensions:
-     - Name: "DomainName"
-       Value: !Ref ESDomainName
-     - Name: "ClientId" 
-       Value: !Ref "AWS::AccountId"
-
-ESClusterYellowStatusAlarm:
- Type: AWS::CloudWatch::Alarm
- #DeletionPolicy: Retain
- Properties:
-   AlarmDescription: At least one replica shard is not allocated to a node
-   AlarmName:
-     Fn::Sub:
-       - cb-${Environment}-${RegionId}-${Microservice}-es-cluster-yellow-status-alarm
-       - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
-   AlarmActions:
-   - Ref: SnsTopicArn
-   MetricName: ClusterStatus.yellow
-   Namespace: AWS/ES
-   Statistic: Maximum
-   Period: 60
-   EvaluationPeriods: 1
-   Threshold: 1
-   ComparisonOperator: GreaterThanOrEqualToThreshold
-   Dimensions:
-     - Name: "DomainName"
-       Value: !Ref ESDomainName
-     - Name: "ClientId" 
-       Value: !Ref "AWS::AccountId"
-
-ESFreeStorageSpaceAlarm:
-  Type: AWS::CloudWatch::Alarm
-  #DeletionPolicy: Retain
-  Properties:
-      AlarmDescription: Alarm when freespace goes down to 40GiB or less
+  ESClusterRedStatusAlarm:
+    Type: AWS::CloudWatch::Alarm
+    #DeletionPolicy: Retain
+    Properties:
+      AlarmDescription: At least one primary shard and its replicas are not allocated to a node
       AlarmName:
-          Fn::Sub:
-              - cb-${Environment}-${RegionId}-${Microservice}-es-freestorage-alarm
-              - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+        Fn::Sub:
+          - cb-${Environment}-${RegionId}-${Microservice}-es-cluster-red-status-alarm
+          - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
       AlarmActions:
       - Ref: SnsTopicArn
-      MetricName: FreeStorageSpace
-      Namespace: AWS/ES
-      Statistic: Minimum
-      Period: 60
-      EvaluationPeriods: 2
-      Threshold: 40960
-      ComparisonOperator: LessThanOrEqualToThreshold
-      Dimensions:
-      - Name: "DomainName"
-        Value: !Ref ESDomainName
-      - Name: "ClientId" 
-        Value: !Ref "AWS::AccountId"
-
-ESCPUUtilizationAlarm:
-  Type: AWS::CloudWatch::Alarm
-  #DeletionPolicy: Retain
-  Properties:
-      AlarmDescription: Continuous high CPU utilization
-      AlarmName:
-          Fn::Sub:
-              - cb-${Environment}-${RegionId}-${Microservice}-es-cpu-utilization-alarm
-              - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
-      AlarmActions:
-      - Ref: SnsTopicArn
-      MetricName: CPUUtilization
-      Namespace: AWS/ES
-      Statistic: Average
-      Period: 300
-      EvaluationPeriods: 3
-      Threshold: 80
-      ComparisonOperator: GreaterThanOrEqualToThreshold
-      Dimensions:
-      - Name: "DomainName"
-        Value: !Ref ESDomainName
-      - Name: "ClientId" 
-        Value: !Ref "AWS::AccountId"
-
-ESClusterBlockExceptionAlarm:
-  Type: AWS::CloudWatch::Alarm
-  #DeletionPolicy: Retain
-  Properties:
-      AlarmDescription: Continuous high CPU utilization
-      AlarmName:
-          Fn::Sub:
-              - cb-${Environment}-${RegionId}-${Microservice}-es-cluster-block-alarm
-              - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
-      AlarmActions:
-      - Ref: SnsTopicArn
-      MetricName: ClusterIndexWritesBlocked
+      MetricName: ClusterStatus.red
       Namespace: AWS/ES
       Statistic: Maximum
-      Period: 300
+      Period: 60
       EvaluationPeriods: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       Dimensions:
-      - Name: "DomainName"
-        Value: !Ref ESDomainName
-      - Name: "ClientId" 
-        Value: !Ref "AWS::AccountId"
+        - Name: "DomainName"
+          Value: !Ref ESDomainName
+        - Name: "ClientId" 
+          Value: !Ref "AWS::AccountId"
 
-ESJVMMemoryPressureAlarm:
-  Type: AWS::CloudWatch::Alarm
-  #DeletionPolicy: Retain
-  Properties:
-      AlarmDescription: High JVM Memory usage for extended period of time
+  ESClusterYellowStatusAlarm:
+    Type: AWS::CloudWatch::Alarm
+    #DeletionPolicy: Retain
+    Properties:
+      AlarmDescription: At least one replica shard is not allocated to a node
       AlarmName:
-          Fn::Sub:
-              - cb-${Environment}-${RegionId}-${Microservice}-es-jvm-memory-alarm
-              - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+        Fn::Sub:
+          - cb-${Environment}-${RegionId}-${Microservice}-es-cluster-yellow-status-alarm
+          - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
       AlarmActions:
       - Ref: SnsTopicArn
-      MetricName: JVMMemoryPressure
+      MetricName: ClusterStatus.yellow
       Namespace: AWS/ES
       Statistic: Maximum
-      Period: 300
-      EvaluationPeriods: 3
-      Threshold: 80
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       Dimensions:
-      - Name: "DomainName"
-        Value: !Ref ESDomainName
-      - Name: "ClientId" 
-        Value: !Ref "AWS::AccountId"
+        - Name: "DomainName"
+          Value: !Ref ESDomainName
+        - Name: "ClientId" 
+          Value: !Ref "AWS::AccountId"
+
+  ESFreeStorageSpaceAlarm:
+    Type: AWS::CloudWatch::Alarm
+    #DeletionPolicy: Retain
+    Properties:
+        AlarmDescription: Alarm when freespace goes down to 40GiB or less
+        AlarmName:
+            Fn::Sub:
+                - cb-${Environment}-${RegionId}-${Microservice}-es-freestorage-alarm
+                - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+        AlarmActions:
+        - Ref: SnsTopicArn
+        MetricName: FreeStorageSpace
+        Namespace: AWS/ES
+        Statistic: Minimum
+        Period: 60
+        EvaluationPeriods: 2
+        Threshold: 40960
+        ComparisonOperator: LessThanOrEqualToThreshold
+        Dimensions:
+        - Name: "DomainName"
+          Value: !Ref ESDomainName
+        - Name: "ClientId" 
+          Value: !Ref "AWS::AccountId"
+
+  ESCPUUtilizationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    #DeletionPolicy: Retain
+    Properties:
+        AlarmDescription: Continuous high CPU utilization
+        AlarmName:
+            Fn::Sub:
+                - cb-${Environment}-${RegionId}-${Microservice}-es-cpu-utilization-alarm
+                - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+        AlarmActions:
+        - Ref: SnsTopicArn
+        MetricName: CPUUtilization
+        Namespace: AWS/ES
+        Statistic: Average
+        Period: 300
+        EvaluationPeriods: 3
+        Threshold: 80
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        Dimensions:
+        - Name: "DomainName"
+          Value: !Ref ESDomainName
+        - Name: "ClientId" 
+          Value: !Ref "AWS::AccountId"
+
+  ESClusterBlockExceptionAlarm:
+    Type: AWS::CloudWatch::Alarm
+    #DeletionPolicy: Retain
+    Properties:
+        AlarmDescription: Continuous high CPU utilization
+        AlarmName:
+            Fn::Sub:
+                - cb-${Environment}-${RegionId}-${Microservice}-es-cluster-block-alarm
+                - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+        AlarmActions:
+        - Ref: SnsTopicArn
+        MetricName: ClusterIndexWritesBlocked
+        Namespace: AWS/ES
+        Statistic: Maximum
+        Period: 300
+        EvaluationPeriods: 1
+        Threshold: 1
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        Dimensions:
+        - Name: "DomainName"
+          Value: !Ref ESDomainName
+        - Name: "ClientId" 
+          Value: !Ref "AWS::AccountId"
+
+  ESJVMMemoryPressureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    #DeletionPolicy: Retain
+    Properties:
+        AlarmDescription: High JVM Memory usage for extended period of time
+        AlarmName:
+            Fn::Sub:
+                - cb-${Environment}-${RegionId}-${Microservice}-es-jvm-memory-alarm
+                - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
+        AlarmActions:
+        - Ref: SnsTopicArn
+        MetricName: JVMMemoryPressure
+        Namespace: AWS/ES
+        Statistic: Maximum
+        Period: 300
+        EvaluationPeriods: 3
+        Threshold: 80
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        Dimensions:
+        - Name: "DomainName"
+          Value: !Ref ESDomainName
+        - Name: "ClientId" 
+          Value: !Ref "AWS::AccountId"
 
