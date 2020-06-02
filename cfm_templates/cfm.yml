@@ -33,7 +33,7 @@ Parameters:
     Type: List<AWS::EC2::Subnet::Id>
     Description: Subnet Id
   MicoserviceSubnetSg:
-    Type: List<AWS::EC2::SecurityGroup::Id>
+    Type: AWS::EC2::SecurityGroup::Id
     Description: Subnet SG Id
 Mappings: 
   CommonServiceMeta: 
@@ -187,7 +187,7 @@ Resources:
           - Fn::GetAtt:  [ MSKSecurityGroup , GroupId]
         StorageInfo:
           EBSStorageInfo:
-            VolumeSize: ${MSKStorageSize}
+            VolumeSize: !Ref MSKStorageSize
       ClusterName: 
         Fn::Sub: 
           - cb-${Environment}-${RegionId}-${Microservice}-msk-cluster
