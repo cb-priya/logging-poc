@@ -16,10 +16,14 @@ PUT _template/cb_log_template
       },
       "level": { "type": "keyword"},
       "logger": {"type": "text"},
-      "thread": {"type": "text"},
-      "logMessage": {"type":"text"},
+      "thread_id": {"type": "text"},
+      "source": {"type": "text"},
+      "message": {"type":"text"},
       "domain": {"type":"text"},
-      "requestId": {"type":"text"},
+      "request_id": {"type":"text"},
+      "exception": {"type":"text"},
+      "cause": {"type":"text"},
+      "stack_trace": {"type":"text"},
       "created_at" : {"type": "date"}
     }
   }
