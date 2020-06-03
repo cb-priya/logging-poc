@@ -44,6 +44,10 @@ public class LoggerTest {
         //JCB credit card numbers
         logger.info("credit number is 3530111333300000 ");
         logger.info("credit number is 3566002020360505 ");
+        
+        //Negative scenarios using cvv regex
+        logger.info("DB Id can be 319 and is masked ");
+        logger.info("Timestamp is 2020-06-03 11:53:43.615 and year,ms is masked ");
 
     }
 
