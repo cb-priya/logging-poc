@@ -20,6 +20,9 @@ Parameters:
   KafkaInstanceType:
     Type: String
     Description: Machine to perform admin actions on MSK cluster
+  CidrIpForKafkaInstance:
+    Type: String
+    Description: IP in CIDR notation to be added for Kafka ssh ingress
   LogstashConfigBucketName:
     Type: String
     Description: Name of Bucket that contains logstash bucket
@@ -143,7 +146,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 0.0.0.0/0
+          CidrIp: !Ref CidrIpForKafkaInstance
   
   ElasticSearchSGIngress:
     Type: 'AWS::EC2::SecurityGroupIngress'
