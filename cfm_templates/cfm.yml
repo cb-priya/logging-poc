@@ -47,6 +47,7 @@ Mappings:
 Resources:
   LogstashRole:
     Type: "AWS::IAM::Role"
+    DeletionPolicy: Retain
     Properties:
       RoleName:
         Fn::Sub: 
@@ -90,6 +91,7 @@ Resources:
 
   LogstashInstanceProfile:
     Type: "AWS::IAM::InstanceProfile"
+    DeletionPolicy: Retain
     Properties: 
       InstanceProfileName:
         Fn::Sub: 
@@ -103,6 +105,7 @@ Resources:
                    
   MSKSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
+    DeletionPolicy: Retain
     Properties:
       GroupName:
         Fn::Sub: 
@@ -129,6 +132,7 @@ Resources:
   
   LogstashSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
+    DeletionPolicy: Retain
     Properties:
       GroupDescription: Security Group to be attached to logstash instances
       GroupName:
@@ -139,6 +143,7 @@ Resources:
             
   KafkaClientInstanceSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
+    DeletionPolicy: Retain
     Properties:
       GroupDescription: Enable SSH access via port 22
       VpcId: !Ref VPC
@@ -150,6 +155,7 @@ Resources:
   
   ElasticSearchSGIngress:
     Type: 'AWS::EC2::SecurityGroupIngress'
+    DeletionPolicy: Retain
     Properties:
       Description : 'Elasticsearch SecurityGroup Ingress Rule'
       GroupId: 
@@ -162,6 +168,7 @@ Resources:
         
   MSKSGZookeeperIngress:
     Type: 'AWS::EC2::SecurityGroupIngress'
+    DeletionPolicy: Retain
     Properties:
       Description : 'MSK SecurityGroup Zookeeper Ingress Rule'
       GroupId:
@@ -174,6 +181,7 @@ Resources:
 
   MSKSGBrokerTlsIngress:
     Type: 'AWS::EC2::SecurityGroupIngress'
+    DeletionPolicy: Retain
     Properties:
       Description : 'MSK SecurityGroup Broker Tls Ingress Rule'
       GroupId:
@@ -186,6 +194,7 @@ Resources:
 
   MSKCluster:
     Type: 'AWS::MSK::Cluster'
+    DeletionPolicy: Retain
     Properties:
       BrokerNodeGroupInfo:
         ClientSubnets: !Ref Subnets

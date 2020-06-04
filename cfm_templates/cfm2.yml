@@ -57,9 +57,6 @@ Parameters:
   SnsTopicArn:
       Type: String
       Description: Arn of SNS topic to notify to
-  MSKBrokerIDList:
-      Type: CommaDelimitedList
-      Description: List all MSK Broker IDs
   
 
 Mappings: 
@@ -71,6 +68,7 @@ Mappings:
 Resources:
   KafkaClientEC2Instance:
     Type: 'AWS::EC2::Instance'
+    DeletionPolicy: Retain
     Properties:
       InstanceType: !Ref KafkaClientInstanceType
       KeyName: !Ref KeyName
@@ -111,6 +109,7 @@ Resources:
         
   LogstashLaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
+    DeletionPolicy: Retain
     Properties:
       LaunchTemplateData:
         InstanceType: !Ref LogstashInstanceType
@@ -180,6 +179,7 @@ Resources:
 
   LogstashASG:
     Type: AWS::AutoScaling::AutoScalingGroup
+    DeletionPolicy: Retain
     Properties:
       AutoScalingGroupName:
         Fn::Sub: 
@@ -198,6 +198,7 @@ Resources:
 
   MSKDataLogsDiskUsedBroker1:
     Type: AWS::CloudWatch::Alarm
+    DeletionPolicy: Retain
     Properties:
         AlarmDescription: High Disk Usage for storing Data
         AlarmName:
@@ -217,11 +218,11 @@ Resources:
         - Name: "Cluster Name"
           Value: !Ref MSKClusterName
         - Name: "Broker ID"
-          Value: !Select 
-          - 0
-          - !Ref MSKBrokerIDList
+          Value: 1
+
   MSKDataLogsDiskUsedBroker2:
     Type: AWS::CloudWatch::Alarm
+    DeletionPolicy: Retain
     Properties:
         AlarmDescription: High Disk Usage for storing Data
         AlarmName:
@@ -241,11 +242,11 @@ Resources:
         - Name: "Cluster Name"
           Value: !Ref MSKClusterName
         - Name: "Broker ID"
-          Value: !Select 
-          - 1
-          - !Ref MSKBrokerIDList
+          Value: 2
+
   MSKDataLogsDiskUsedBroker3:
     Type: AWS::CloudWatch::Alarm
+    DeletionPolicy: Retain
     Properties:
         AlarmDescription: High Disk Usage for storing Data
         AlarmName:
@@ -265,13 +266,12 @@ Resources:
         - Name: "Cluster Name"
           Value: !Ref MSKClusterName
         - Name: "Broker ID"
-          Value: !Select 
-          - 2
-          - !Ref MSKBrokerIDList
+          Value: 3
 
 #MSK CPU alarms
   MSKIdleCPUAlarmsBroker1:
     Type: AWS::CloudWatch::Alarm
+    DeletionPolicy: Retain
     Properties:
         AlarmDescription: Idle CPU for the broker
         AlarmName:
@@ -291,11 +291,11 @@ Resources:
         - Name: "Cluster Name"
           Value: !Ref MSKClusterName
         - Name: "Broker ID"
-          Value: !Select 
-          - 0
-          - !Ref MSKBrokerIDList
+          Value: 1
+
   MSKIdleCPUAlarmsBroker2:
     Type: AWS::CloudWatch::Alarm
+    DeletionPolicy: Retain
     Properties:
         AlarmDescription: Idle CPU for the broker
         AlarmName:
@@ -315,11 +315,11 @@ Resources:
         - Name: "Cluster Name"
           Value: !Ref MSKClusterName
         - Name: "Broker ID"
-          Value: !Select 
-          - 1
-          - !Ref MSKBrokerIDList
+          Value: 2
+
   MSKIdleCPUAlarmsBroker3:
     Type: AWS::CloudWatch::Alarm
+    DeletionPolicy: Retain
     Properties:
         AlarmDescription: Idle CPU for the broker
         AlarmName:
@@ -339,9 +339,7 @@ Resources:
         - Name: "Cluster Name"
           Value: !Ref MSKClusterName
         - Name: "Broker ID"
-          Value: !Select 
-          - 2
-          - !Ref MSKBrokerIDList
+          Value: 3
 
   MSKUnderReplicatedParitionAlarmsBroker1:
     Type: AWS::CloudWatch::Alarm
@@ -364,9 +362,7 @@ Resources:
         - Name: "Cluster Name"
           Value: !Ref MSKClusterName
         - Name: "Broker ID"
-          Value: !Select 
-          - 0
-          - !Ref MSKBrokerIDList
+          Value: 1
 
   MSKUnderReplicatedParitionAlarmsBroker2:
     Type: AWS::CloudWatch::Alarm
@@ -389,12 +385,11 @@ Resources:
         - Name: "Cluster Name"
           Value: !Ref MSKClusterName
         - Name: "Broker ID"
-          Value: !Select 
-          - 1
-          - !Ref MSKBrokerIDList
+          Value: 2
     
   MSKUnderReplicatedParitionAlarmsBroker3:
     Type: AWS::CloudWatch::Alarm
+    DeletionPolicy: Retain
     Properties:
         AlarmDescription: Under Replicated Paritions for the broker
         AlarmName:
@@ -414,10 +409,7 @@ Resources:
         - Name: "Cluster Name"
           Value: !Ref MSKClusterName
         - Name: "Broker ID"
-          Value: !Select 
-          - 2
-          - !Ref MSKBrokerIDList
-          
+          Value: 3
 
 
 
@@ -425,7 +417,7 @@ Resources:
         
   ESClusterRedStatusAlarm:
     Type: AWS::CloudWatch::Alarm
-    #DeletionPolicy: Retain
+    DeletionPolicy: Retain
     Properties:
       AlarmDescription: At least one primary shard and its replicas are not allocated to a node
       AlarmName:
@@ -449,7 +441,7 @@ Resources:
 
   ESClusterYellowStatusAlarm:
     Type: AWS::CloudWatch::Alarm
-    #DeletionPolicy: Retain
+    DeletionPolicy: Retain
     Properties:
       AlarmDescription: At least one replica shard is not allocated to a node
       AlarmName:
@@ -473,7 +465,7 @@ Resources:
 
   ESFreeStorageSpaceAlarm:
     Type: AWS::CloudWatch::Alarm
-    #DeletionPolicy: Retain
+    DeletionPolicy: Retain
     Properties:
         AlarmDescription: Alarm when freespace goes down to 40GiB or less
         AlarmName:
@@ -497,7 +489,7 @@ Resources:
 
   ESCPUUtilizationAlarm:
     Type: AWS::CloudWatch::Alarm
-    #DeletionPolicy: Retain
+    DeletionPolicy: Retain
     Properties:
         AlarmDescription: Continuous high CPU utilization
         AlarmName:
@@ -521,7 +513,7 @@ Resources:
 
   ESClusterBlockExceptionAlarm:
     Type: AWS::CloudWatch::Alarm
-    #DeletionPolicy: Retain
+    DeletionPolicy: Retain
     Properties:
         AlarmDescription: Continuous high CPU utilization
         AlarmName:
