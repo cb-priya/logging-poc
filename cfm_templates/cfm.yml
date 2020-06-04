@@ -19,7 +19,7 @@ Parameters:
     Description: VPC Id
   KafkaInstanceType:
     Type: String
-    Description: Kafka machine type
+    Description: Machine to perform admin actions on MSK cluster
   LogstashConfigBucketName:
     Type: String
     Description: Name of Bucket that contains logstash bucket
