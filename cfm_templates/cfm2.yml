@@ -29,7 +29,7 @@ Parameters:
   LogstashConfigBucketName:
     Type: String
     Description: Name of Bucket that contains logstash bucket
-  UbuntuAMI :
+  AmazonLinux2AMI :
     Type: AWS::EC2::Image::Id
     Description: Image for Kafka Client and Logstash machines
   KafkaClientInstanceType:
@@ -68,7 +68,7 @@ Mappings:
 Resources:
   KafkaClientEC2Instance:
     Type: 'AWS::EC2::Instance'
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
       InstanceType: !Ref KafkaClientInstanceType
       KeyName: !Ref KeyName
@@ -80,7 +80,7 @@ Resources:
       SecurityGroupIds:
         - Fn::ImportValue:
             !Sub "${ELKResourceCFMName}-KafkaClientSecurityGroupId"
-      ImageId: !Ref UbuntuAMI
+      ImageId: !Ref AmazonLinux2AMI
       Tags:
         - Key: Name
           Value: KafkaClientInstance
@@ -89,32 +89,28 @@ Resources:
           !Sub |
             #!/bin/bash
 
-            apt-get update -y
-            apt-get install -y openjdk-8-jre
+            yum update -y
+            yum install -y java-1.8.0-openjdk
 
-            cd /home/ubuntu
-
+            cd /home/ec2-user
             mkdir kafka
-
             cd kafka
 
             wget https://archive.apache.org/dist/kafka/2.2.1/kafka_2.12-2.2.1.tgz
-
             tar -xzf kafka_2.12-2.2.1.tgz
-
             cd kafka_2.12-2.2.1
 
-            /home/ubuntu/kafka/kafka_2.12-2.2.1/bin/kafka-topics.sh --zookeeper ${KafkaZookeepers} --create --topic unmaskedTopic --partitions 6 --replication-factor 3
-            /home/ubuntu/kafka/kafka_2.12-2.2.1/bin/kafka-topics.sh --zookeeper ${KafkaZookeepers} --create --topic maskedTopic  --partitions 6 --replication-factor 3
+            /home/ec2-user/kafka/kafka_2.12-2.2.1/bin/kafka-topics.sh --zookeeper ${KafkaZookeepers} --create --topic unmaskedTopic --partitions 6 --replication-factor 3
+            /home/ec2-user/kafka/kafka_2.12-2.2.1/bin/kafka-topics.sh --zookeeper ${KafkaZookeepers} --create --topic maskedTopic  --partitions 6 --replication-factor 3
         
   LogstashLaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
       LaunchTemplateData:
         InstanceType: !Ref LogstashInstanceType
         KeyName: !Ref KeyName
-        ImageId: !Ref UbuntuAMI
+        ImageId: !Ref AmazonLinux2AMI
         IamInstanceProfile:
           Arn:
             Fn::ImportValue:
@@ -127,26 +123,33 @@ Resources:
             !Sub |
               #!/bin/bash
 
-              apt-get update -y
-
-              apt-get install -y openjdk-8-jre
-
-              cp /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/security/cacerts /home/ubuntu/kafka.client.truststore.jks
-
-              apt install -y awscli
-
-              wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
-              apt-get install -y apt-transport-https
-              echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | tee -a /etc/apt/sources.list.d/elastic-7.x.list
-              apt-get update -y && apt-get install -y logstash
+              yum update -y
+              
+              yum install -y java-1.8.0-openjdk
+              
+              cacerts_path=`find /usr/lib/jvm  -name "cacerts"`
+              cp $cacerts_path /home/ec2-user/kafka.client.truststore.jks
+              
+              rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+              echo "[logstash-7.x]
+              name=Elastic repository for 7.x packages
+              baseurl=https://artifacts.elastic.co/packages/7.x/yum
+              gpgcheck=1
+              gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+              enabled=1
+              autorefresh=1
+              type=rpm-md"  > /etc/yum.repos.d/logstash.repo
+              
+              yum install -y logstash-7.7.1
+              
               /usr/share/logstash/bin/logstash-plugin install logstash-output-amazon_es
               /usr/share/logstash/bin/logstash-plugin install logstash-codec-json
-
-              aws s3 sync s3://${LogstashConfigBucketName}/logstash-configs /home/ubuntu/logstash-configs
-
-              mv  /home/ubuntu/logstash-configs/pipelines.yml /etc/logstash/pipelines.yml
-
-              cp /home/ubuntu/logstash-configs/* /etc/logstash/conf.d/
+              
+              aws s3 sync s3://${LogstashConfigBucketName}/logstash-configs /home/ec2-user/logstash-configs
+              
+              mv  /home/ec2-user/logstash-configs/pipelines.yml /etc/logstash/pipelines.yml
+              
+              cp /home/ec2-user/logstash-configs/* /etc/logstash/conf.d/
               
               echo "MASKER_INPUT_TOPIC=\"unmaskedTopic\"" >> /etc/default/logstash
               echo "MASKER_OUTPUT_TOPIC=\"maskedTopic\"" >> /etc/default/logstash
@@ -154,7 +157,7 @@ Resources:
               echo "MASKER_CONSUMER_THREADS=2" >> /etc/default/logstash
               echo "MASKER_INPUT_BROKERS=\""${KafkaBrokers}"\"" >> /etc/default/logstash
               echo "MASKER_OUTPUT_BROKERS=\""${KafkaBrokers}"\"" >> /etc/default/logstash
-
+              
               echo "ES_SYNC_INPUT_TOPIC=\"maskedTopic\"" >> /etc/default/logstash
               echo "ES_SYNC_CONSUMER_GROUP_ID=\"es-sync-consumer\"" >> /etc/default/logstash
               echo "ES_SYNC_CONSUMER_THREADS=2" >> /etc/default/logstash
@@ -162,14 +165,14 @@ Resources:
               echo "ES_DOMAIN_NAME=\""${ESDomainName}"\"" >> /etc/default/logstash
               echo "ES_REGION=\""${AWS::Region}"\"" >> /etc/default/logstash
               echo "ES_INDEX=\"cb-application-logs\"" >> /etc/default/logstash
-
+              
               echo "S3_INPUT_TOPIC=\"maskedTopic\"" >> /etc/default/logstash
               echo "S3_CONSUMER_GROUP_ID=\"s3-sync-consumer\"" >> /etc/default/logstash
               echo "S3_CONSUMER_THREADS=2" >> /etc/default/logstash
               echo "S3_REGION=\""${AWS::Region}"\"" >> /etc/default/logstash
               echo "S3_INPUT_BROKERS=\""${KafkaBrokers}"\"" >> /etc/default/logstash
               echo "S3_BUCKET_NAME=\""${LogstashConfigBucketName}"\"" >> /etc/default/logstash
-
+              
               systemctl restart logstash
 
       LaunchTemplateName:
@@ -179,7 +182,7 @@ Resources:
 
   LogstashASG:
     Type: AWS::AutoScaling::AutoScalingGroup
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
       AutoScalingGroupName:
         Fn::Sub: 
@@ -198,7 +201,7 @@ Resources:
 
   MSKDataLogsDiskUsedBroker1:
     Type: AWS::CloudWatch::Alarm
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
         AlarmDescription: High Disk Usage for storing Data
         AlarmName:
@@ -222,7 +225,7 @@ Resources:
 
   MSKDataLogsDiskUsedBroker2:
     Type: AWS::CloudWatch::Alarm
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
         AlarmDescription: High Disk Usage for storing Data
         AlarmName:
@@ -246,7 +249,7 @@ Resources:
 
   MSKDataLogsDiskUsedBroker3:
     Type: AWS::CloudWatch::Alarm
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
         AlarmDescription: High Disk Usage for storing Data
         AlarmName:
@@ -271,7 +274,7 @@ Resources:
 #MSK CPU alarms
   MSKIdleCPUAlarmsBroker1:
     Type: AWS::CloudWatch::Alarm
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
         AlarmDescription: Idle CPU for the broker
         AlarmName:
@@ -295,7 +298,7 @@ Resources:
 
   MSKIdleCPUAlarmsBroker2:
     Type: AWS::CloudWatch::Alarm
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
         AlarmDescription: Idle CPU for the broker
         AlarmName:
@@ -319,7 +322,7 @@ Resources:
 
   MSKIdleCPUAlarmsBroker3:
     Type: AWS::CloudWatch::Alarm
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
         AlarmDescription: Idle CPU for the broker
         AlarmName:
@@ -389,7 +392,7 @@ Resources:
     
   MSKUnderReplicatedParitionAlarmsBroker3:
     Type: AWS::CloudWatch::Alarm
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
         AlarmDescription: Under Replicated Paritions for the broker
         AlarmName:
@@ -417,7 +420,7 @@ Resources:
         
   ESClusterRedStatusAlarm:
     Type: AWS::CloudWatch::Alarm
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
       AlarmDescription: At least one primary shard and its replicas are not allocated to a node
       AlarmName:
@@ -441,7 +444,7 @@ Resources:
 
   ESClusterYellowStatusAlarm:
     Type: AWS::CloudWatch::Alarm
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
       AlarmDescription: At least one replica shard is not allocated to a node
       AlarmName:
@@ -465,7 +468,7 @@ Resources:
 
   ESFreeStorageSpaceAlarm:
     Type: AWS::CloudWatch::Alarm
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
         AlarmDescription: Alarm when freespace goes down to 40GiB or less
         AlarmName:
@@ -489,7 +492,7 @@ Resources:
 
   ESCPUUtilizationAlarm:
     Type: AWS::CloudWatch::Alarm
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
         AlarmDescription: Continuous high CPU utilization
         AlarmName:
@@ -513,7 +516,7 @@ Resources:
 
   ESClusterBlockExceptionAlarm:
     Type: AWS::CloudWatch::Alarm
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
         AlarmDescription: Continuous high CPU utilization
         AlarmName:
@@ -537,7 +540,7 @@ Resources:
 
   ESJVMMemoryPressureAlarm:
     Type: AWS::CloudWatch::Alarm
-    #DeletionPolicy: Retain
+    ##DeletionPolicy: Retain
     Properties:
         AlarmDescription: High JVM Memory usage for extended period of time
         AlarmName:

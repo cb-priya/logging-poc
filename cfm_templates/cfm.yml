@@ -47,7 +47,7 @@ Mappings:
 Resources:
   LogstashRole:
     Type: "AWS::IAM::Role"
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
       RoleName:
         Fn::Sub: 
@@ -91,7 +91,7 @@ Resources:
 
   LogstashInstanceProfile:
     Type: "AWS::IAM::InstanceProfile"
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties: 
       InstanceProfileName:
         Fn::Sub: 
@@ -105,7 +105,7 @@ Resources:
                    
   MSKSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
       GroupName:
         Fn::Sub: 
@@ -132,7 +132,7 @@ Resources:
   
   LogstashSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
       GroupDescription: Security Group to be attached to logstash instances
       GroupName:
@@ -143,7 +143,7 @@ Resources:
             
   KafkaClientInstanceSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
       GroupDescription: Enable SSH access via port 22
       VpcId: !Ref VPC
@@ -155,7 +155,7 @@ Resources:
   
   ElasticSearchSGIngress:
     Type: 'AWS::EC2::SecurityGroupIngress'
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
       Description : 'Elasticsearch SecurityGroup Ingress Rule'
       GroupId: 
@@ -165,10 +165,23 @@ Resources:
       ToPort: 443
       SourceSecurityGroupId: 
         Fn::GetAtt:  [ LogstashSecurityGroup , GroupId]
+
+  LogstashSGIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    #DeletionPolicy: Retain
+    Properties:
+      Description : 'Logstash SecurityGroup Ingress Rule'
+      GroupId: 
+        Fn::GetAtt:  [ LogstashSecurityGroup , GroupId]
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      SourceSecurityGroupId: 
+        Fn::GetAtt:  [ KafkaClientInstanceSecurityGroup , GroupId]
         
   MSKSGZookeeperIngress:
     Type: 'AWS::EC2::SecurityGroupIngress'
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
       Description : 'MSK SecurityGroup Zookeeper Ingress Rule'
       GroupId:
@@ -181,7 +194,7 @@ Resources:
 
   MSKSGBrokerTlsIngress:
     Type: 'AWS::EC2::SecurityGroupIngress'
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
       Description : 'MSK SecurityGroup Broker Tls Ingress Rule'
       GroupId:
@@ -194,7 +207,7 @@ Resources:
 
   MSKCluster:
     Type: 'AWS::MSK::Cluster'
-    DeletionPolicy: Retain
+    #DeletionPolicy: Retain
     Properties:
       BrokerNodeGroupInfo:
         ClientSubnets: !Ref Subnets
@@ -212,6 +225,7 @@ Resources:
         EncryptionInTransit:
           ClientBroker: TLS
           InCluster: true
+        #EncryptionAtRest
       EnhancedMonitoring: PER_TOPIC_PER_BROKER
       KafkaVersion: 2.2.1
       NumberOfBrokerNodes: 3
