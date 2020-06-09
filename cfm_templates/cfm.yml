@@ -229,7 +229,8 @@ Resources:
         EncryptionInTransit:
           ClientBroker: TLS
           InCluster: true
-        #EncryptionAtRest
+        EncryptionAtRest:
+          DataVolumeKMSKeyId: ''
       EnhancedMonitoring: PER_TOPIC_PER_BROKER
       KafkaVersion: 2.2.1
       NumberOfBrokerNodes: 2
