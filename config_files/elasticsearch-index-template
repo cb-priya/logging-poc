@@ -1,4 +1,4 @@
-PUT _template/cb_log_template
+PUT _template/cb_app_log_template
 {
   "index_patterns": [
     "cb-application-logs*"

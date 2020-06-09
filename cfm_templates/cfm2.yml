@@ -26,6 +26,9 @@ Parameters:
   ESDomainName:
     Type: String
     Description: Elasticsearch Domain Name
+  ESEndpoint:
+    Type: String
+    Description: Elasticsearch endpoint FQDN
   LogstashConfigBucketName:
     Type: String
     Description: Name of Bucket that contains logstash bucket
@@ -48,9 +51,6 @@ Parameters:
   Subnets:
     Type: List<AWS::EC2::Subnet::Id>
     Description: Subnet Id
-  ESDomainName:
-    Type: String
-    Description: ES Domain name
   MSKClusterName:
     Type: String
     Description: MSK Cluster Name
@@ -83,7 +83,10 @@ Resources:
       ImageId: !Ref AmazonLinux2AMI
       Tags:
         - Key: Name
-          Value: KafkaClientInstance
+          Value:  
+            Fn::Sub:
+                - cb-${Environment}-${RegionId}-${Microservice}-kafka-client-instance
+                - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
       UserData: 
         Fn::Base64:
           !Sub |
@@ -100,8 +103,8 @@ Resources:
             tar -xzf kafka_2.12-2.2.1.tgz
             cd kafka_2.12-2.2.1
 
-            /home/ec2-user/kafka/kafka_2.12-2.2.1/bin/kafka-topics.sh --zookeeper ${KafkaZookeepers} --create --topic unmaskedTopic --partitions 6 --replication-factor 3
-            /home/ec2-user/kafka/kafka_2.12-2.2.1/bin/kafka-topics.sh --zookeeper ${KafkaZookeepers} --create --topic maskedTopic  --partitions 6 --replication-factor 3
+            /home/ec2-user/kafka/kafka_2.12-2.2.1/bin/kafka-topics.sh --zookeeper ${KafkaZookeepers} --create --topic unmaskedTopic --partitions 6 --replication-factor 3 --config min.insync.replicas=2
+            /home/ec2-user/kafka/kafka_2.12-2.2.1/bin/kafka-topics.sh --zookeeper ${KafkaZookeepers} --create --topic maskedTopic  --partitions 6 --replication-factor 3 --config min.insync.replicas=2
         
   LogstashLaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
@@ -162,7 +165,7 @@ Resources:
               echo "ES_SYNC_CONSUMER_GROUP_ID=\"es-sync-consumer\"" >> /etc/default/logstash
               echo "ES_SYNC_CONSUMER_THREADS=2" >> /etc/default/logstash
               echo "ES_SYNC_INPUT_BROKERS=\""${KafkaBrokers}"\"" >> /etc/default/logstash
-              echo "ES_DOMAIN_NAME=\""${ESDomainName}"\"" >> /etc/default/logstash
+              echo "ES_DOMAIN_NAME=\""${ESEndpoint}"\"" >> /etc/default/logstash
               echo "ES_REGION=\""${AWS::Region}"\"" >> /etc/default/logstash
               echo "ES_INDEX=\"cb-application-logs\"" >> /etc/default/logstash
               
@@ -503,7 +506,7 @@ Resources:
         - Ref: SnsTopicArn
         MetricName: CPUUtilization
         Namespace: AWS/ES
-        Statistic: Average
+        Statistic: Maximum
         Period: 300
         EvaluationPeriods: 3
         Threshold: 80

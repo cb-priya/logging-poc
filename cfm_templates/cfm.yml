@@ -146,6 +146,10 @@ Resources:
     #DeletionPolicy: Retain
     Properties:
       GroupDescription: Enable SSH access via port 22
+      GroupName:
+        Fn::Sub: 
+          - cb-${Environment}-${RegionId}-${Microservice}-kafkaclient-fw
+          - { RegionId: !FindInMap [CommonServiceMeta, !Ref "AWS::Region", name]}
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -228,7 +232,7 @@ Resources:
         #EncryptionAtRest
       EnhancedMonitoring: PER_TOPIC_PER_BROKER
       KafkaVersion: 2.2.1
-      NumberOfBrokerNodes: 3
+      NumberOfBrokerNodes: 2
   
 Outputs:
   LogstashInstanceProfileArn:
