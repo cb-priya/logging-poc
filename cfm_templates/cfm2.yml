@@ -103,8 +103,8 @@ Resources:
             tar -xzf kafka_2.12-2.2.1.tgz
             cd kafka_2.12-2.2.1
 
-            /home/ec2-user/kafka/kafka_2.12-2.2.1/bin/kafka-topics.sh --zookeeper ${KafkaZookeepers} --create --topic unmaskedTopic --partitions 6 --replication-factor 3 --config min.insync.replicas=2
-            /home/ec2-user/kafka/kafka_2.12-2.2.1/bin/kafka-topics.sh --zookeeper ${KafkaZookeepers} --create --topic maskedTopic  --partitions 6 --replication-factor 3 --config min.insync.replicas=2
+            /home/ec2-user/kafka/kafka_2.12-2.2.1/bin/kafka-topics.sh --zookeeper ${KafkaZookeepers} --create --topic unmaskedTopic --partitions 6 --replication-factor 2 --config min.insync.replicas=1 --config retention.ms=259200000
+            /home/ec2-user/kafka/kafka_2.12-2.2.1/bin/kafka-topics.sh --zookeeper ${KafkaZookeepers} --create --topic maskedTopic  --partitions 6 --replication-factor 2 --config min.insync.replicas=1 --config retention.ms=259200000
         
   LogstashLaunchTemplate:
     Type: AWS::EC2::LaunchTemplate

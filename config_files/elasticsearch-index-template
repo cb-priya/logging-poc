@@ -30,6 +30,46 @@ PUT _template/cb_app_log_template
       "cause": {"type":"text"},
       "stack_trace": {"type":"text"},
       "created_at" : {"type": "date"}
+      "fields" : {
+        "properties" : {
+          "app_type" : {
+              "type" : "text",
+              "fields" : {
+              "keyword" : {
+                  "type" : "keyword",
+                  "ignore_above" : 256
+              }
+              }
+          },
+          "domain" : {
+              "type" : "text",
+              "fields" : {
+              "keyword" : {
+                  "type" : "keyword",
+                  "ignore_above" : 256
+              }
+              }
+          },
+          "log_format" : {
+              "type" : "text",
+              "fields" : {
+              "keyword" : {
+                  "type" : "keyword",
+                  "ignore_above" : 256
+              }
+              }
+          },
+          "log_type" : {
+              "type" : "text",
+              "fields" : {
+              "keyword" : {
+                  "type" : "keyword",
+                  "ignore_above" : 256
+              }
+              }
+          }
+        }
+      }
     }
   }
 }
